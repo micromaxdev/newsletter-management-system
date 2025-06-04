@@ -7,6 +7,8 @@ const cors = require("cors");
 const POP3Client = require('poplib');
 const { simpleParser } = require('mailparser');
 
+
+
 // Initialize express app
 const app = express();
 
@@ -20,6 +22,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // User routes
 app.use("/api/users", require("./routes/userRoutes"));
+
 
 // POP3 Email API route
 app.get("/api/emails", async (req, res) => {
@@ -142,5 +145,5 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5002;
 app.listen(port, () => console.log(`Server running on port ${port}`));
