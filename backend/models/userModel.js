@@ -26,7 +26,7 @@
 
 
 
-//working code
+
 // const mongoose = require("mongoose");
 
 // // User Schema for authentication
@@ -53,107 +53,77 @@
 
 // module.exports = mongoose.model("User", userSchema);
 
-// models/emailModel.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
-// Enhanced email schema with folder support
-const emailSchema = new mongoose.Schema({
-  messageId: { 
-    type: String, 
-    unique: true, 
-    sparse: true 
-  },
-  subject: {
+// User Schema for authentication and authorization
+const userSchema = mongoose.Schema({
+  name: {
     type: String,
-    required: true
+    required: [true, "Please add a name"],
+    trim: true
   },
-  from: {
-    name: String,
-    address: {
-      type: String,
-      required: true
+  email: {
+    type: String,
+    required: [true, "Please add an email"],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [
+      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      'Please add a valid email'
+    ]
+  },
+  password: {
+    type: String,
+    required: [true, "Please add a password"],
+    minlength: 6
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  lastLogin: {
+    type: Date
+  },
+  emailPreferences: {
+    notifications: {
+      type: Boolean,
+      default: true
+    },
+    newsletter: {
+      type: Boolean,
+      default: false
     }
-  },
-  to: [{
-    name: String,
-    address: String
-  }],
-  date: {
-    type: Date,
-    default: Date.now
-  },
-  text: String,
-  html: String,
-  
-  // Folder organization fields
-  senderFolder: {
-    type: String,
-    required: true,
-    index: true // Add index for faster queries
-  },
-  senderDomain: {
-    type: String,
-    index: true
-  },
-  
-  // Additional organization fields
-  isRead: {
-    type: Boolean,
-    default: false
-  },
-  isStarred: {
-    type: Boolean,
-    default: false
-  },
-  tags: [String],
-  
-  // Metadata
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Index for efficient folder queries
-emailSchema.index({ senderFolder: 1, date: -1 });
-emailSchema.index({ senderDomain: 1, date: -1 });
-
-// Helper method to generate folder name from email address
-emailSchema.statics.generateFolderName = function(emailAddress) {
-  if (!emailAddress) return 'unknown';
-  
-  // Clean the email address
-  const cleanEmail = emailAddress.toLowerCase().trim();
-  
-  // Extract domain for additional organization
-  const domain = cleanEmail.split('@')[1] || 'unknown';
-  
-  // Create a clean folder name
-  const folderName = cleanEmail.replace(/[^a-zA-Z0-9@.-]/g, '_');
-  
-  return {
-    folderName,
-    domain
-  };
-};
-
-// Pre-save middleware to automatically set folder information
-emailSchema.pre('save', function(next) {
-  if (this.from && this.from.address) {
-    const { folderName, domain } = this.constructor.generateFolderName(this.from.address);
-    this.senderFolder = folderName;
-    this.senderDomain = domain;
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) {
+    next();
   }
-  next();
+  
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
-module.exports = mongoose.model('Email', emailSchema);
+// Method to compare password
+userSchema.methods.matchPassword = async function(enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Index for better query performance
+userSchema.index({ email: 1 });
+
+module.exports = mongoose.model("User", userSchema);
 
 // second code
 
@@ -211,4 +181,4 @@ module.exports = mongoose.model('Email', emailSchema);
 //   text: String,
 // });
 
-// module.exports = mongoose.model("Email", emailSchema);
+// module.exports = mongoose.model("Email", emailSchem
