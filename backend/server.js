@@ -519,6 +519,79 @@ app.get("/api/emails/count", async (req, res) => {
   }
 });
 
+// Add this to your existing server.js file, after your other routes
+
+// Define the folder names
+const FOLDERS = [
+  'Supplier',
+  'Competitor', 
+  'Information',
+  'Customers',
+  'Marketing'
+];
+
+// Create folders route
+app.get("/api/folders/create", async (req, res) => {
+  try {
+    console.log('Creating email folders...');
+    
+    const folderStatus = [];
+    
+    for (const folderName of FOLDERS) {
+      // Check if folder already has emails
+      const existingEmails = await Email.countDocuments({ folder: folderName });
+      
+      folderStatus.push({
+        name: folderName,
+        exists: existingEmails > 0,
+        emailCount: existingEmails
+      });
+    }
+    
+    res.json({
+      message: 'Folders created successfully',
+      folders: folderStatus
+    });
+    
+  } catch (error) {
+    console.error('Error creating folders:', error);
+    res.status(500).json({ error: 'Failed to create folders' });
+  }
+});
+
+// Move email to folder route
+app.put("/api/emails/:emailId/folder", async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const { folderName } = req.body;
+    
+    if (!FOLDERS.includes(folderName)) {
+      return res.status(400).json({ 
+        error: `Invalid folder name. Must be one of: ${FOLDERS.join(', ')}` 
+      });
+    }
+    
+    const result = await Email.findByIdAndUpdate(
+      emailId, 
+      { folder: folderName },
+      { new: true }
+    );
+    
+    if (result) {
+      res.json({
+        message: `Email moved to ${folderName} folder`,
+        email: result
+      });
+    } else {
+      res.status(404).json({ error: 'Email not found' });
+    }
+    
+  } catch (error) {
+    console.error('Error moving email:', error);
+    res.status(500).json({ error: 'Failed to move email' });
+  }
+});
+
 // Serve frontend
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")));
