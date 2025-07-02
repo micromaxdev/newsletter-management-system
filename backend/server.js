@@ -1,2041 +1,518 @@
-// // //working code
-// // const express = require("express");
-// // const dotenv = require("dotenv").config();
-// // const connectDB = require("./config/db");
-// // const path = require("path");
-// // const cors = require("cors");
-
-// // const POP3Client = require('poplib');
-// // const { simpleParser } = require('mailparser');
-
-// // // Import Email model for database storage
-// // const Email = require("./models/emailModel");
-
-// // // Initialize express app
-// // const app = express();
-
-// // const folderRoutes = require("./routes/folderRoutes");
-// // app.use("/api/folders", folderRoutes);
-
-// // // Connect to database
-// // connectDB();
-
-// // // Middleware
-// // app.use(cors());
-// // app.use(express.json());
-// // app.use(express.urlencoded({ extended: false }));
-
-// // // User routes
-// // app.use("/api/users", require("./routes/userRoutes"));
-
-// // // POP3 Email API route - Now saves to database and returns parsed sender info
-// // app.get("/api/emails", async (req, res) => {
-// //   const host = process.env.POP3_HOST || 'pop.gmail.com';
-// //   const pop3Port = 995;
-// //   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-// //   const password = process.env.POP3_PASS || 'bssr xsrf tjvs pxyu';
-
-// //   const client = new POP3Client(pop3Port, host, {
-// //     tlserrs: false,
-// //     enabletls: true,
-// //     debug: false,
-// //     ignoretlserrs: true,
-// //   });
-
-// //   let emails = [];
-// //   let responded = false;
-
-// //   client.on('error', function(err) {
-// //     if (!responded) {
-// //       responded = true;
-// //       return res.status(500).json({ error: err.message });
-// //     }
-// //   });
-
-// //   client.on('connect', function() {
-// //     client.login(username, password);
-// //   });
-
-// //   client.on('login', function(status) {
-// //     if (status) {
-// //       client.stat();
-// //     } else {
-// //       if (!responded) {
-// //         responded = true;
-// //         res.status(401).json({ error: "Login failed" });
-// //       }
-// //       client.quit();
-// //     }
-// //   });
-
-// //   client.on('stat', function(status, data) {
-// //     if (!status) {
-// //       if (!responded) {
-// //         responded = true;
-// //         res.status(500).json({ error: "STAT failed" });
-// //       }
-// //       client.quit();
-// //     } else {
-// //       if (data.count > 0) {
-// //         retrieveMessage(1, data.count);
-// //       } else {
-// //         if (!responded) {
-// //           responded = true;
-// //           res.json([]);
-// //         }
-// //         client.quit();
-// //       }
-// //     }
-// //   });
-
-// //   async function retrieveMessage(current, total) {
-// //     client.retr(current);
-// //     client.once('retr', async function(status, msgnumber, data) {
-// //       if (status) {
-// //         simpleParser(data, async (err, parsed) => {
-// //           if (!err) {
-// //             const emailData = {
-// //               subject: parsed.subject,
-// //               from: {
-// //                 name: parsed.from?.value?.[0]?.name || parsed.from?.name || '',
-// //                 address: parsed.from?.value?.[0]?.address || parsed.from?.address || parsed.from?.text || ''
-// //               },
-// //               date: parsed.date,
-// //               text: parsed.text,
-// //               html: parsed.html,
-// //               messageId: parsed.messageId
-// //             };
-
-// //             // Save to database (avoid duplicates)
-// //             try {
-// //               const existingEmail = await Email.findOne({ messageId: emailData.messageId });
-// //               if (!existingEmail && emailData.messageId) {
-// //                 await Email.create(emailData);
-// //                 console.log(`Saved email: ${emailData.subject}`);
-// //               }
-// //             } catch (dbError) {
-// //               console.error('Error saving email:', dbError);
-// //             }
-
-// //             // Also add to response array for immediate return
-// //             emails.push({
-// //               subject: emailData.subject,
-// //               from: emailData.from,
-// //               date: emailData.date,
-// //               text: emailData.text,
-// //             });
-// //           }
-          
-// //           if (current < total) {
-// //             retrieveMessage(current + 1, total);
-// //           } else {
-// //             if (!responded) {
-// //               responded = true;
-// //               res.json(emails);
-// //             }
-// //             client.quit();
-// //           }
-// //         });
-// //       } else {
-// //         if (current < total) {
-// //           retrieveMessage(current + 1, total);
-// //         } else {
-// //           if (!responded) {
-// //             responded = true;
-// //             res.json(emails);
-// //           }
-// //           client.quit();
-// //         }
-// //       }
-// //     });
-// //   }
-// // });
-
-// // //
-
-
-// // // New route to get saved emails from database
-// // app.get("/api/emails/saved", async (req, res) => {
-// //   try {
-// //     const savedEmails = await Email.find().sort({ date: -1 }).limit(50);
-// //     res.json(savedEmails);
-// //   } catch (error) {
-// //     console.error('Error fetching saved emails:', error);
-// //     res.status(500).json({ error: 'Failed to fetch saved emails' });
-// //   }
-// // });
-
-// // // Route to get count of saved emails
-// // app.get("/api/emails/count", async (req, res) => {
-// //   try {
-// //     const count = await Email.countDocuments();
-// //     res.json({ count });
-// //   } catch (error) {
-// //     console.error('Error counting emails:', error);
-// //     res.status(500).json({ error: 'Failed to count emails' });
-// //   }
-// // });
-
-
-// // // Define the folder names
-// // const FOLDERS = [
-// //   'Supplier',
-// //   'Competitor', 
-// //   'Information',
-// //   'Customers',
-// //   'Marketing'
-// // ];
-
-// // // Create folders route
-// // app.get("/api/folders/create", async (req, res) => {
-// //   try {
-// //     console.log('Creating email folders...');
-    
-// //     const folderStatus = [];
-    
-// //     for (const folderName of FOLDERS) {
-// //       // Check if folder already has emails
-// //       const existingEmails = await Email.countDocuments({ folder: folderName });
-      
-// //       folderStatus.push({
-// //         name: folderName,
-// //         exists: existingEmails > 0,
-// //         emailCount: existingEmails
-// //       });
-// //     }
-    
-// //     res.json({
-// //       message: 'Folders created successfully',
-// //       folders: folderStatus
-// //     });
-    
-// //   } catch (error) {
-// //     console.error('Error creating folders:', error);
-// //     res.status(500).json({ error: 'Failed to create folders' });
-// //   }
-// // });
-
-// // // Move email to folder route
-// // app.put("/api/emails/:emailId/folder", async (req, res) => {
-// //   try {
-// //     const { emailId } = req.params;
-// //     const { folderName } = req.body;
-    
-// //     if (!FOLDERS.includes(folderName)) {
-// //       return res.status(400).json({ 
-// //         error: `Invalid folder name. Must be one of: ${FOLDERS.join(', ')}` 
-// //       });
-// //     }
-    
-// //     const result = await Email.findByIdAndUpdate(
-// //       emailId, 
-// //       { folder: folderName },
-// //       { new: true }
-// //     );
-    
-// //     if (result) {
-// //       res.json({
-// //         message: `Email moved to ${folderName} folder`,
-// //         email: result
-// //       });
-// //     } else {
-// //       res.status(404).json({ error: 'Email not found' });
-// //     }
-    
-// //   } catch (error) {
-// //     console.error('Error moving email:', error);
-// //     res.status(500).json({ error: 'Failed to move email' });
-// //   }
-// // });
-
-// // // Serve frontend
-// // if (process.env.NODE_ENV === "production") {
-// //   app.use(express.static(path.join(__dirname, "../frontend/build")));
-// //   app.get("*", (req, res) =>
-// //     res.sendFile(
-// //       path.resolve(__dirname, "../", "frontend", "build", "index.html")
-// //     )
-// //   );
-// // } else {
-// //   app.get("/", (req, res) => res.send("Please set to production"));
-// // }
-
-// // // Error handling middleware
-// // app.use((err, req, res, next) => {
-// //   const statusCode = res.statusCode ? res.statusCode : 500;
-// //   res.status(statusCode);
-// //   res.json({
-// //     message: err.message,
-// //     stack: process.env.NODE_ENV === "production" ? null : err.stack,
-// //   });
-// // });
-
-// // // Start server
-// // const port = process.env.PORT || 5007;
-// // app.listen(port, () => console.log(`Server running on port ${port}`));
-// const express = require("express");
-// const dotenv = require("dotenv").config();
-// const connectDB = require("./config/db");
-// const path = require("path");
-// const cors = require("cors");
-
-// const POP3Client = require('poplib');
-// const { simpleParser } = require('mailparser');
-
-// // Import Email model for database storage
-// const Email = require("./models/emailModel");
-
-// // Initialize express app
-// const app = express();
-
-// // Connect to database
-// connectDB();
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: false }));
-
-// // User routes
-// app.use("/api/users", require("./routes/userRoutes"));
-
-// // Folder routes
-// const folderRoutes = require("./routes/folderRoutes");
-// app.use("/api/folders", folderRoutes);
-
-// // Define valid folder IDs
-// const VALID_FOLDER_IDS = [
-//   'inbox', 'supplier', 'competitor', 'information', 
-//   'customers', 'marketing', 'archive'
-// ];
-
-// // POP3 Email API route - Enhanced with folder assignment
-// app.get("/api/emails", async (req, res) => {
-//   const host = process.env.POP3_HOST || 'pop.gmail.com';
-//   const pop3Port = 995;
-//   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-//   const password = process.env.POP3_PASS || 'bssr xsrf tjvs pxyu';
-
-//   const client = new POP3Client(pop3Port, host, {
-//     tlserrs: false,
-//     enabletls: true,
-//     debug: false,
-//     ignoretlserrs: true,
-//   });
-
-//   let emails = [];
-//   let responded = false;
-
-//   client.on('error', function(err) {
-//     if (!responded) {
-//       responded = true;
-//       return res.status(500).json({ error: err.message });
-//     }
-//   });
-
-//   client.on('connect', function() {
-//     client.login(username, password);
-//   });
-
-//   client.on('login', function(status) {
-//     if (status) {
-//       client.stat();
-//     } else {
-//       if (!responded) {
-//         responded = true;
-//         res.status(401).json({ error: "Login failed" });
-//       }
-//       client.quit();
-//     }
-//   });
-
-//   client.on('stat', function(status, data) {
-//     if (!status) {
-//       if (!responded) {
-//         responded = true;
-//         res.status(500).json({ error: "STAT failed" });
-//       }
-//       client.quit();
-//     } else {
-//       if (data.count > 0) {
-//         retrieveMessage(1, data.count);
-//       } else {
-//         if (!responded) {
-//           responded = true;
-//           res.json([]);
-//         }
-//         client.quit();
-//       }
-//     }
-//   });
-
-//   // categorise emails based on sender or subject
-//   function categorizeEmail(emailData) {
-//     const sender = (emailData.from.address || '').toLowerCase();
-//     const subject = (emailData.subject || '').toLowerCase();
-    
-//     // Define categorization rules
-//     if (sender.includes('supplier') || subject.includes('supplier') || 
-//         sender.includes('vendor') || subject.includes('invoice')) {
-//       return 'supplier';
-//     }
-//     if (sender.includes('competitor') || subject.includes('competitor') ||
-//         subject.includes('market analysis') || subject.includes('industry')) {
-//       return 'competitor';
-//     }
-//     if (subject.includes('newsletter') || subject.includes('news') ||
-//         subject.includes('update') || subject.includes('announcement')) {
-//       return 'information';
-//     }
-//     if (sender.includes('customer') || subject.includes('customer') ||
-//         subject.includes('support') || subject.includes('inquiry')) {
-//       return 'customers';
-//     }
-//     if (subject.includes('marketing') || subject.includes('promo') ||
-//         subject.includes('sale') || subject.includes('offer')) {
-//       return 'marketing';
-//     }
-    
-//     // Default to inbox
-//     return 'inbox';
-//   }
-
-//   async function retrieveMessage(current, total) {
-//     client.retr(current);
-//     client.once('retr', async function(status, msgnumber, data) {
-//       if (status) {
-//         simpleParser(data, async (err, parsed) => {
-//           if (!err) {
-//             const emailData = {
-//               subject: parsed.subject,
-//               from: {
-//                 name: parsed.from?.value?.[0]?.name || parsed.from?.name || '',
-//                 address: parsed.from?.value?.[0]?.address || parsed.from?.address || parsed.from?.text || ''
-//               },
-//               date: parsed.date,
-//               text: parsed.text,
-//               html: parsed.html,
-//               messageId: parsed.messageId,
-//               folderId: null // Will be set by categorization
-//             };
-
-//             // Auto-categorize the email
-//             emailData.folderId = categorizeEmail(emailData);
-
-//             // Save to database (avoid duplicates)
-//             try {
-//               const existingEmail = await Email.findOne({ messageId: emailData.messageId });
-//               if (!existingEmail && emailData.messageId) {
-//                 await Email.create(emailData);
-//                 console.log(`Saved email: ${emailData.subject} -> ${emailData.folderId} folder`);
-//               }
-//             } catch (dbError) {
-//               console.error('Error saving email:', dbError);
-//             }
-
-//             // Also add to response array for immediate return
-//             emails.push({
-//               subject: emailData.subject,
-//               from: emailData.from,
-//               date: emailData.date,
-//               text: emailData.text,
-//               folderId: emailData.folderId
-//             });
-//           }
-          
-//           if (current < total) {
-//             retrieveMessage(current + 1, total);
-//           } else {
-//             if (!responded) {
-//               responded = true;
-//               res.json(emails);
-//             }
-//             client.quit();
-//           }
-//         });
-//       } else {
-//         if (current < total) {
-//           retrieveMessage(current + 1, total);
-//         } else {
-//           if (!responded) {
-//             responded = true;
-//             res.json(emails);
-//           }
-//           client.quit();
-//         }
-//       }
-//     });
-//   }
-// });
-
-// // Get saved emails from database with optional folder filtering
-// app.get("/api/emails/saved", async (req, res) => {
-//   try {
-//     const { folderId } = req.query;
-    
-//     let filter = {};
-//     if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-//       filter.folderId = folderId;
-//     }
-    
-//     const savedEmails = await Email.find(filter).sort({ date: -1 }).limit(50);
-//     res.json(savedEmails);
-//   } catch (error) {
-//     console.error('Error fetching saved emails:', error);
-//     res.status(500).json({ error: 'Failed to fetch saved emails' });
-//   }
-// });
-
-// // Move email to different folder
-// app.put("/api/emails/:emailId/folder", async (req, res) => {
-//   try {
-//     const { emailId } = req.params;
-//     const { folderId } = req.body;
-    
-//     if (!VALID_FOLDER_IDS.includes(folderId)) {
-//       return res.status(400).json({ 
-//         error: `Invalid folder ID. Must be one of: ${VALID_FOLDER_IDS.join(', ')}` 
-//       });
-//     }
-    
-//     const result = await Email.findByIdAndUpdate(
-//       emailId, 
-//       { folderId: folderId },
-//       { new: true }
-//     );
-    
-//     if (result) {
-//       res.json({
-//         message: `Email moved to folder`,
-//         email: result
-//       });
-//     } else {
-//       res.status(404).json({ error: 'Email not found' });
-//     }
-    
-//   } catch (error) {
-//     console.error('Error moving email:', error);
-//     res.status(500).json({ error: 'Failed to move email' });
-//   }
-// });
-
-// // Get email counts per folder
-// app.get("/api/emails/counts", async (req, res) => {
-//   try {
-//     const counts = {};
-    
-//     for (const folderId of VALID_FOLDER_IDS) {
-//       counts[folderId] = await Email.countDocuments({ folderId });
-//     }
-    
-//     res.json(counts);
-//   } catch (error) {
-//     console.error('Error counting emails:', error);
-//     res.status(500).json({ error: 'Failed to count emails' });
-//   }
-// });
-
-// // Route to get count of saved emails
-// app.get("/api/emails/count", async (req, res) => {
-//   try {
-//     const count = await Email.countDocuments();
-//     res.json({ count });
-//   } catch (error) {
-//     console.error('Error counting emails:', error);
-//     res.status(500).json({ error: 'Failed to count emails' });
-//   }
-// });
-
-// // Bulk categorize existing emails (utility endpoint)
-// app.post("/api/emails/categorize", async (req, res) => {
-//   try {
-//     const emails = await Email.find({ folderId: { $exists: false } });
-//     let categorized = 0;
-    
-//     for (const email of emails) {
-//       const folderId = categorizeEmail(email);
-//       await Email.findByIdAndUpdate(email._id, { folderId });
-//       categorized++;
-//     }
-    
-//     res.json({ 
-//       message: `Successfully categorized ${categorized} emails`,
-//       categorized 
-//     });
-//   } catch (error) {
-//     console.error('Error categorizing emails:', error);
-//     res.status(500).json({ error: 'Failed to categorize emails' });
-//   }
-// });
-
-// // Serve frontend
-// if (process.env.NODE_ENV === "production") {
-//   app.use(express.static(path.join(__dirname, "../frontend/build")));
-//   app.get("*", (req, res) =>
-//     res.sendFile(
-//       path.resolve(__dirname, "../", "frontend", "build", "index.html")
-//     )
-//   );
-// } else {
-//   app.get("/", (req, res) => res.send("Please set to production"));
-// }
-
-// // Error handling middleware
-// app.use((err, req, res, next) => {
-//   const statusCode = res.statusCode ? res.statusCode : 500;
-//   res.status(statusCode);
-//   res.json({
-//     message: err.message,
-//     stack: process.env.NODE_ENV === "production" ? null : err.stack,
-//   });
-// });
-
-// // Auto-categorize function (helper)
-// function categorizeEmail(emailData) {
-//   const sender = (emailData.from?.address || emailData.from || '').toLowerCase();
-//   const subject = (emailData.subject || '').toLowerCase();
-  
-//   // Define categorization rules
-//   if (sender.includes('supplier') || subject.includes('supplier') || 
-//       sender.includes('vendor') || subject.includes('invoice')) {
-//     return 'supplier';
-//   }
-//   if (sender.includes('competitor') || subject.includes('competitor') ||
-//       subject.includes('market analysis') || subject.includes('industry')) {
-//     return 'competitor';
-//   }
-//   if (subject.includes('newsletter') || subject.includes('news') ||
-//       subject.includes('update') || subject.includes('announcement')) {
-//     return 'information';
-//   }
-//   if (sender.includes('customer') || subject.includes('customer') ||
-//       subject.includes('support') || subject.includes('inquiry')) {
-//     return 'customers';
-//   }
-//   if (subject.includes('marketing') || subject.includes('promo') ||
-//       subject.includes('sale') || subject.includes('offer')) {
-//     return 'marketing';
-//   }
-  
-//   // Default to inbox
-//   return 'inbox';
-// }
-
-// // Start server
-// const port = process.env.PORT || 5007;
-// app.listen(port, () => console.log(`Server running on port ${port}`));
-
-
-// //working code
-// const express = require("express");
-// const dotenv = require("dotenv").config();
-// const connectDB = require("./config/db");
-// const path = require("path");
-// const cors = require("cors");
-
-// const POP3Client = require('poplib');
-// const { simpleParser } = require('mailparser');
-
-// // Import Email model and categorization service
-// const Email = require("./models/emailModel");
-// const EmailCategorizationService = require("./services/emailCategorizationService");
-
-// // Initialize express app
-// const app = express();
-
-// // Initialize categorization service
-// const categorizer = new EmailCategorizationService();
-
-// // Connect to database
-// connectDB();
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: false }));
-
-// // User routes
-// app.use("/api/users", require("./routes/userRoutes"));
-
-// // Folder routes
-// const folderRoutes = require("./routes/folderRoutes");
-// app.use("/api/folders", folderRoutes);
-
-// // Define valid folder IDs
-// const VALID_FOLDER_IDS = [
-//   'inbox', 'supplier', 'competitor', 'information', 
-//   'customers', 'marketing', 'archive'
-// ];
-
-// // Enhanced POP3 Email API route with advanced categorization
-// app.get("/api/emails", async (req, res) => {
-//   const host = process.env.POP3_HOST || 'pop.gmail.com';
-//   const pop3Port = 995;
-//   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-//   const password = process.env.POP3_PASS || 'bssr xsrf tjvs pxyu';
-
-//   const client = new POP3Client(pop3Port, host, {
-//     tlserrs: false,
-//     enabletls: true,
-//     debug: false,
-//     ignoretlserrs: true,
-//   });
-
-//   let emails = [];
-//   let responded = false;
-//   let categorizationStats = {
-//     total: 0,
-//     categorized: {},
-//     errors: 0
-//   };
-
-//   // Error handling
-//   client.on('error', function(err) {
-//     console.error('POP3 Client Error:', err);
-//     if (!responded) {
-//       responded = true;
-//       return res.status(500).json({ error: err.message });
-//     }
-//   });
-
-//   // Connection established
-//   client.on('connect', function() {
-//     console.log('Connected to POP3 server');
-//     client.login(username, password);
-//   });
-
-//   // Login response
-//   client.on('login', function(status) {
-//     if (status) {
-//       console.log('Login successful');
-//       client.stat();
-//     } else {
-//       console.error('Login failed');
-//       if (!responded) {
-//         responded = true;
-//         res.status(401).json({ error: "Login failed" });
-//       }
-//       client.quit();
-//     }
-//   });
-
-//   // Stat response (message count)
-//   client.on('stat', function(status, data) {
-//     if (!status) {
-//       console.error('STAT command failed');
-//       if (!responded) {
-//         responded = true;
-//         res.status(500).json({ error: "STAT failed" });
-//       }
-//       client.quit();
-//     } else {
-//       console.log(`Found ${data.count} emails`);
-//       categorizationStats.total = data.count;
-      
-//       if (data.count > 0) {
-//         retrieveMessage(1, data.count);
-//       } else {
-//         if (!responded) {
-//           responded = true;
-//           res.json({
-//             emails: [],
-//             categorization: categorizationStats
-//           });
-//         }
-//         client.quit();
-//       }
-//     }
-//   });
-
-//   // Enhanced message retrieval with advanced categorization
-//   async function retrieveMessage(current, total) {
-//     client.retr(current);
-//     client.once('retr', async function(status, msgnumber, data) {
-//       if (status) {
-//         try {
-//           const parsed = await new Promise((resolve, reject) => {
-//             simpleParser(data, (err, result) => {
-//               if (err) reject(err);
-//               else resolve(result);
-//             });
-//           });
-
-//           const emailData = {
-//             subject: parsed.subject || '(No Subject)',
-//             from: {
-//               name: parsed.from?.value?.[0]?.name || parsed.from?.name || '',
-//               address: parsed.from?.value?.[0]?.address || parsed.from?.address || parsed.from?.text || ''
-//             },
-//             date: parsed.date || new Date(),
-//             text: parsed.text || '',
-//             html: parsed.html || '',
-//             messageId: parsed.messageId || `${Date.now()}-${current}`,
-//             folderId: null
-//           };
-
-//           // Use advanced categorization service
-//           emailData.folderId = categorizer.categorizeEmail(emailData);
-          
-//           // Update categorization stats
-//           if (!categorizationStats.categorized[emailData.folderId]) {
-//             categorizationStats.categorized[emailData.folderId] = 0;
-//           }
-//           categorizationStats.categorized[emailData.folderId]++;
-
-//           // Save to database (avoid duplicates)
-//           try {
-//             const existingEmail = await Email.findOne({ messageId: emailData.messageId });
-//             if (!existingEmail) {
-//               await Email.create(emailData);
-//               console.log(`✓ Saved email: "${emailData.subject}" → ${emailData.folderId} folder`);
-//             } else {
-//               console.log(`⚠ Email already exists: "${emailData.subject}"`);
-//               // Update folder if it's different (for recategorization)
-//               if (existingEmail.folderId !== emailData.folderId) {
-//                 await Email.findByIdAndUpdate(existingEmail._id, { folderId: emailData.folderId });
-//                 console.log(`📁 Updated folder: "${emailData.subject}" → ${emailData.folderId}`);
-//               }
-//             }
-//           } catch (dbError) {
-//             console.error('❌ Error saving email:', dbError);
-//             categorizationStats.errors++;
-//           }
-
-//           // Add to response array
-//           emails.push({
-//             id: emailData.messageId,
-//             subject: emailData.subject,
-//             from: emailData.from,
-//             date: emailData.date,
-//             text: emailData.text.substring(0, 200) + (emailData.text.length > 200 ? '...' : ''),
-//             folderId: emailData.folderId
-//           });
-
-//         } catch (parseError) {
-//           console.error('❌ Error parsing email:', parseError);
-//           categorizationStats.errors++;
-//         }
-//       } else {
-//         console.error(`❌ Failed to retrieve email ${current}`);
-//         categorizationStats.errors++;
-//       }
-      
-//       // Continue with next email or finish
-//       if (current < total) {
-//         retrieveMessage(current + 1, total);
-//       } else {
-//         if (!responded) {
-//           responded = true;
-//           console.log('📊 Categorization Summary:', categorizationStats);
-//           res.json({
-//             emails: emails,
-//             categorization: categorizationStats,
-//             message: `Successfully processed ${emails.length} emails`
-//           });
-//         }
-//         client.quit();
-//       }
-//     });
-//   }
-
-//   // Set timeout to prevent hanging
-//   setTimeout(() => {
-//     if (!responded) {
-//       responded = true;
-//       res.status(408).json({ 
-//         error: 'Request timeout',
-//         partialResults: {
-//           emails: emails,
-//           categorization: categorizationStats
-//         }
-//       });
-//       client.quit();
-//     }
-//   }, 45000); // 45 second timeout
-// });
-
-// // Get saved emails from database with optional folder filtering
-// app.get("/api/emails/saved", async (req, res) => {
-//   try {
-//     const { folderId, limit = 50, page = 1 } = req.query;
-    
-//     let filter = {};
-//     if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-//       filter.folderId = folderId;
-//     }
-    
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-//     const savedEmails = await Email.find(filter)
-//       .sort({ date: -1 })
-//       .limit(parseInt(limit))
-//       .skip(skip);
-    
-//     const total = await Email.countDocuments(filter);
-    
-//     res.json({
-//       emails: savedEmails,
-//       pagination: {
-//         total,
-//         page: parseInt(page),
-//         limit: parseInt(limit),
-//         totalPages: Math.ceil(total / parseInt(limit))
-//       }
-//     });
-//   } catch (error) {
-//     console.error('Error fetching saved emails:', error);
-//     res.status(500).json({ error: 'Failed to fetch saved emails' });
-//   }
-// });
-
-// // Move email to different folder
-// app.put("/api/emails/:emailId/folder", async (req, res) => {
-//   try {
-//     const { emailId } = req.params;
-//     const { folderId } = req.body;
-    
-//     if (!VALID_FOLDER_IDS.includes(folderId)) {
-//       return res.status(400).json({ 
-//         error: `Invalid folder ID. Must be one of: ${VALID_FOLDER_IDS.join(', ')}` 
-//       });
-//     }
-    
-//     const email = await Email.findById(emailId);
-//     if (!email) {
-//       return res.status(404).json({ error: 'Email not found' });
-//     }
-
-//     const oldFolderId = email.folderId;
-//     const result = await Email.findByIdAndUpdate(
-//       emailId, 
-//       { folderId: folderId },
-//       { new: true }
-//     );
-    
-//     // Learn from user correction if it's different from predicted
-//     if (oldFolderId !== folderId) {
-//       categorizer.learnFromCorrection(email, folderId, oldFolderId);
-//     }
-    
-//     res.json({
-//       message: `Email moved to ${folderId} folder`,
-//       email: result,
-//       change: `${oldFolderId} → ${folderId}`
-//     });
-    
-//   } catch (error) {
-//     console.error('Error moving email:', error);
-//     res.status(500).json({ error: 'Failed to move email' });
-//   }
-// });
-
-// // Get email counts per folder
-// app.get("/api/emails/counts", async (req, res) => {
-//   try {
-//     const counts = {};
-//     let totalEmails = 0;
-    
-//     for (const folderId of VALID_FOLDER_IDS) {
-//       const count = await Email.countDocuments({ folderId });
-//       counts[folderId] = count;
-//       totalEmails += count;
-//     }
-    
-//     res.json({
-//       counts,
-//       total: totalEmails,
-//       categories: VALID_FOLDER_IDS
-//     });
-//   } catch (error) {
-//     console.error('Error counting emails:', error);
-//     res.status(500).json({ error: 'Failed to count emails' });
-//   }
-// });
-
-// // Enhanced bulk categorization endpoint
-// app.post("/api/emails/recategorize", async (req, res) => {
-//   try {
-//     console.log('🔄 Starting email recategorization...');
-    
-//     const emails = await Email.find({});
-    
-//     if (emails.length === 0) {
-//       return res.json({
-//         message: 'No emails found to recategorize',
-//         stats: { total: 0, updated: 0, errors: 0 }
-//       });
-//     }
-
-//     let updated = 0;
-//     let errors = 0;
-//     const categoryChanges = {};
-
-//     for (const email of emails) {
-//       try {
-//         const oldCategory = email.folderId;
-//         const newCategory = categorizer.categorizeEmail(email);
-        
-//         if (oldCategory !== newCategory) {
-//           await Email.findByIdAndUpdate(email._id, { folderId: newCategory });
-//           updated++;
-          
-//           const changeKey = `${oldCategory} → ${newCategory}`;
-//           categoryChanges[changeKey] = (categoryChanges[changeKey] || 0) + 1;
-          
-//           console.log(`📁 Updated: "${email.subject}" ${oldCategory} → ${newCategory}`);
-//         }
-//       } catch (error) {
-//         console.error(`❌ Error recategorizing email ${email._id}:`, error);
-//         errors++;
-//       }
-//     }
-
-//     // Get final category counts
-//     const finalCounts = {};
-//     for (const folderId of VALID_FOLDER_IDS) {
-//       finalCounts[folderId] = await Email.countDocuments({ folderId });
-//     }
-
-//     console.log('✅ Recategorization complete');
-    
-//     res.json({
-//       message: `Recategorization complete: ${updated} emails updated`,
-//       stats: {
-//         total: emails.length,
-//         updated: updated,
-//         errors: errors,
-//         unchanged: emails.length - updated - errors
-//       },
-//       changes: categoryChanges,
-//       finalCounts: finalCounts
-//     });
-    
-//   } catch (error) {
-//     console.error('❌ Error during recategorization:', error);
-//     res.status(500).json({ error: 'Failed to recategorize emails' });
-//   }
-// });
-
-// // Get categorization statistics and insights
-// app.get("/api/emails/categorization/stats", async (req, res) => {
-//   try {
-//     const stats = {
-//       categories: categorizer.getCategoryInfo(),
-//       emailCounts: {},
-//       totalEmails: 0,
-//       lastUpdated: new Date(),
-//       validFolders: VALID_FOLDER_IDS
-//     };
-    
-//     // Get email counts per category
-//     for (const folderId of VALID_FOLDER_IDS) {
-//       const count = await Email.countDocuments({ folderId });
-//       stats.emailCounts[folderId] = count;
-//       stats.totalEmails += count;
-//     }
-    
-//     // Get recent categorization activity
-//     const recentEmails = await Email.find({})
-//       .sort({ createdAt: -1 })
-//       .limit(100);
-    
-//     if (recentEmails.length > 0) {
-//       const recentStats = categorizer.bulkCategorize(recentEmails);
-//       stats.recentActivity = recentStats;
-//     }
-    
-//     res.json(stats);
-//   } catch (error) {
-//     console.error('Error getting categorization stats:', error);
-//     res.status(500).json({ error: 'Failed to get categorization stats' });
-//   }
-// });
-
-// // Add custom categorization rules
-// app.post("/api/emails/categorization/add-rule", async (req, res) => {
-//   try {
-//     const { categoryId, rules } = req.body;
-    
-//     if (!categoryId || !rules) {
-//       return res.status(400).json({ 
-//         error: 'categoryId and rules are required' 
-//       });
-//     }
-    
-//     // Validate rules structure
-//     const validRuleTypes = ['senderKeywords', 'subjectKeywords', 'domainPatterns'];
-//     const hasValidRules = validRuleTypes.some(ruleType => 
-//       rules[ruleType] && Array.isArray(rules[ruleType])
-//     );
-    
-//     if (!hasValidRules) {
-//       return res.status(400).json({
-//         error: `Rules must contain at least one of: ${validRuleTypes.join(', ')}`
-//       });
-//     }
-    
-//     categorizer.addCustomRule(categoryId, rules);
-    
-//     res.json({
-//       message: `Custom categorization rule added for category: ${categoryId}`,
-//       rules: rules,
-//       categoryInfo: categorizer.getCategoryInfo()
-//     });
-    
-//   } catch (error) {
-//     console.error('Error adding custom rule:', error);
-//     res.status(500).json({ error: 'Failed to add custom rule' });
-//   }
-// });
-
-// // Get single email details
-// app.get("/api/emails/:emailId", async (req, res) => {
-//   try {
-//     const { emailId } = req.params;
-//     const email = await Email.findById(emailId);
-    
-//     if (!email) {
-//       return res.status(404).json({ error: 'Email not found' });
-//     }
-    
-//     res.json(email);
-//   } catch (error) {
-//     console.error('Error fetching email:', error);
-//     res.status(500).json({ error: 'Failed to fetch email' });
-//   }
-// });
-
-// // Route to get count of saved emails (backward compatibility)
-// app.get("/api/emails/count", async (req, res) => {
-//   try {
-//     const count = await Email.countDocuments();
-//     res.json({ count });
-//   } catch (error) {
-//     console.error('Error counting emails:', error);
-//     res.status(500).json({ error: 'Failed to count emails' });
-//   }
-// });
-
-// // Search emails
-// app.get("/api/emails/search", async (req, res) => {
-//   try {
-//     const { q, folderId, limit = 20 } = req.query;
-    
-//     if (!q) {
-//       return res.status(400).json({ error: 'Search query is required' });
-//     }
-    
-//     let filter = {
-//       $or: [
-//         { subject: { $regex: q, $options: 'i' } },
-//         { 'from.name': { $regex: q, $options: 'i' } },
-//         { 'from.address': { $regex: q, $options: 'i' } },
-//         { text: { $regex: q, $options: 'i' } }
-//       ]
-//     };
-    
-//     if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-//       filter.folderId = folderId;
-//     }
-    
-//     const emails = await Email.find(filter)
-//       .sort({ date: -1 })
-//       .limit(parseInt(limit));
-    
-//     res.json({
-//       query: q,
-//       results: emails,
-//       total: emails.length
-//     });
-    
-//   } catch (error) {
-//     console.error('Error searching emails:', error);
-//     res.status(500).json({ error: 'Failed to search emails' });
-//   }
-// });
-
-// // Serve frontend
-// if (process.env.NODE_ENV === "production") {
-//   app.use(express.static(path.join(__dirname, "../frontend/build")));
-//   app.get("*", (req, res) =>
-//     res.sendFile(
-//       path.resolve(__dirname, "../", "frontend", "build", "index.html")
-//     )
-//   );
-// } else {
-//   app.get("/", (req, res) => res.send("Please set to production"));
-// }
-
-// // Error handling middleware
-// app.use((err, req, res, next) => {
-//   const statusCode = res.statusCode ? res.statusCode : 500;
-//   res.status(statusCode);
-//   res.json({
-//     message: err.message,
-//     stack: process.env.NODE_ENV === "production" ? null : err.stack,
-//   });
-// });
-
-// // Start server
-// const port = process.env.PORT || 5007;
-// app.listen(port, () => {
-//   console.log(`Server running on port ${port}`);
-//   console.log(' Email categorization service initialized');
-//   console.log(` Available folders: ${VALID_FOLDER_IDS.join(', ')}`);
-// });
-
-// const express = require("express");
-// const dotenv = require("dotenv").config();
-// const connectDB = require("./config/db");
-// const path = require("path");
-// const cors = require("cors");
-
-// const POP3Client = require('poplib');
-// const { simpleParser } = require('mailparser');
-
-// const Email = require("./models/emailModel");
-// const EmailCategorizationService = require("./services/emailCategorizationService");
-
-// const app = express();
-// const categorizer = new EmailCategorizationService();
-
-// connectDB();
-
-// app.use(cors());
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: false }));
-
-// // User routes
-// app.use("/api/users", require("./routes/userRoutes"));
-
-// // Folder routes
-// const folderRoutes = require("./routes/folderRoutes");
-// app.use("/api/folders", folderRoutes);
-
-// const VALID_FOLDER_IDS = [
-//   'inbox', 'supplier', 'competitor', 'information', 
-//   'customers', 'marketing', 'archive'
-// ];
-
-// // ------------------ Email Fetching and Categorization ------------------
-// // Enhanced GET /api/emails route
-// app.get("/api/emails", async (req, res) => {
-//   const host = process.env.POP3_HOST || 'pop.gmail.com';
-//   const port = 995;
-//   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-//   const password = process.env.POP3_PASS || 'bssr xsrf tjvs pxyu';
-
-//   const client = new POP3Client(port, host, {
-//     tlserrs: false,
-//     enabletls: true,
-//     debug: false,
-//     ignoretlserrs: true,
-//   });
-
-//   let emails = [];
-//   let responded = false;
-//   let categorizationStats = {
-//     total: 0,
-//     categorized: {},
-//     errors: 0
-//   };
-
-//   client.on('error', (err) => {
-//     console.error('POP3 Client Error:', err);
-//     if (!responded) {
-//       responded = true;
-//       return res.status(500).json({ error: err.message });
-//     }
-//   });
-
-//   client.on('connect', () => {
-//     console.log('Connected to POP3 server');
-//     client.login(username, password);
-//   });
-
-//   client.on('login', (status) => {
-//     if (status) {
-//       console.log('Login successful');
-//       client.stat();
-//     } else {
-//       console.error('Login failed');
-//       if (!responded) {
-//         responded = true;
-//         res.status(401).json({ error: "Login failed" });
-//       }
-//       client.quit();
-//     }
-//   });
-
-//   client.on('stat', (status, data) => {
-//     if (!status) {
-//       console.error('STAT command failed');
-//       if (!responded) {
-//         responded = true;
-//         res.status(500).json({ error: "STAT failed" });
-//       }
-//       client.quit();
-//     } else {
-//       console.log(`Found ${data.count} emails`);
-//       categorizationStats.total = data.count;
-//       if (data.count > 0) {
-//         retrieveMessage(1, data.count);
-//       } else {
-//         if (!responded) {
-//           responded = true;
-//           res.json({ emails, categorization: categorizationStats });
-//         }
-//         client.quit();
-//       }
-//     }
-//   });
-
-//   async function retrieveMessage(current, total) {
-//     client.retr(current);
-//     client.once('retr', async (status, msgnumber, data) => {
-//       if (status) {
-//         try {
-//           const parsed = await new Promise((resolve, reject) => {
-//             simpleParser(data, (err, result) => {
-//               if (err) reject(err);
-//               else resolve(result);
-//             });
-//           });
-
-//           const emailData = {
-//             subject: parsed.subject || '(No Subject)',
-//             from: {
-//               name: parsed.from?.value?.[0]?.name || parsed.from?.name || '',
-//               address: parsed.from?.value?.[0]?.address || parsed.from?.address || parsed.from?.text || ''
-//             },
-//             date: parsed.date || new Date(),
-//             text: parsed.text || '',
-//             html: parsed.html || '',
-//             messageId: parsed.messageId || `${Date.now()}-${current}`,
-//             folderId: null
-//           };
-
-//           // Categorize email
-//           emailData.folderId = categorizer.categorizeEmail(emailData);
-
-//           // Stats
-//           if (!categorizationStats.categorized[emailData.folderId]) {
-//             categorizationStats.categorized[emailData.folderId] = 0;
-//           }
-//           categorizationStats.categorized[emailData.folderId]++;
-
-//           // Save to DB if not exists
-//           try {
-//             const existing = await Email.findOne({ messageId: emailData.messageId });
-//             if (!existing) {
-//               await Email.create(emailData);
-//               console.log(`✓ Saved email: "${emailData.subject}" → ${emailData.folderId}`);
-//             } else {
-//               // Update folder if different
-//               if (existing.folderId !== emailData.folderId) {
-//                 await Email.findByIdAndUpdate(existing._id, { folderId: emailData.folderId });
-//                 console.log(`📁 Updated folder: "${emailData.subject}" → ${emailData.folderId}`);
-//               }
-//             }
-//           } catch (dbErr) {
-//             console.error('❌ Error saving email:', dbErr);
-//             categorizationStats.errors++;
-//           }
-
-//           // Add to response
-//           emails.push({
-//             id: emailData.messageId,
-//             subject: emailData.subject,
-//             from: emailData.from,
-//             date: emailData.date,
-//             text: emailData.text.substring(0, 200) + (emailData.text.length > 200 ? '...' : ''),
-//             folderId: emailData.folderId
-//           });
-
-//         } catch (parseErr) {
-//           console.error('❌ Error parsing email:', parseErr);
-//           categorizationStats.errors++;
-//         }
-//       } else {
-//         console.error(`❌ Failed to retrieve email ${current}`);
-//         categorizationStats.errors++;
-//       }
-
-//       if (current < total) {
-//         retrieveMessage(current + 1, total);
-//       } else {
-//         if (!responded) {
-//           responded = true;
-//           console.log('📊 Categorization Stats:', categorizationStats);
-//           res.json({ emails, categorization: categorizationStats });
-//         }
-//         client.quit();
-//       }
-//     });
-//   }
-
-//   setTimeout(() => {
-//     if (!responded) {
-//       responded = true;
-//       res.status(408).json({
-//         error: 'Request timeout',
-//         partialResults: { emails, categorization: categorizationStats }
-//       });
-//       client.quit();
-//     }
-//   }, 45000);
-// });
-
-// // GET saved emails with optional folder filter
-// app.get("/api/emails/saved", async (req, res) => {
-//   try {
-//     const { folderId, limit = 50, page = 1 } = req.query;
-//     let filter = {};
-//     if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-//       filter.folderId = folderId;
-//     }
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-//     const emails = await Email.find(filter)
-//       .sort({ date: -1 })
-//       .limit(parseInt(limit))
-//       .skip(skip);
-//     const total = await Email.countDocuments(filter);
-//     res.json({ emails, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-//   } catch (err) {
-//     console.error('Error fetching saved emails:', err);
-//     res.status(500).json({ error: 'Failed to fetch saved emails' });
-//   }
-// });
-
-// // Move email to folder (learn from correction)
-// app.put("/api/emails/:emailId/folder", async (req, res) => {
-//   try {
-//     const { emailId } = req.params;
-//     const { folderId } = req.body;
-//     if (!VALID_FOLDER_IDS.includes(folderId)) {
-//       return res.status(400).json({ error: `Invalid folder ID.` });
-//     }
-//     const email = await Email.findById(emailId);
-//     if (!email) return res.status(404).json({ error: 'Email not found' });
-//     const oldFolderId = email.folderId;
-//     await Email.findByIdAndUpdate(emailId, { folderId });
-//     // Learn from correction
-//     const senderEmail = typeof email.from === 'string' ? email.from : email.from?.address || '';
-//     if (oldFolderId !== folderId) {
-//       categorizer.learnFromCorrection(email, folderId, oldFolderId);
-//     }
-//     res.json({ message: `Folder updated`, email, change: `${oldFolderId} → ${folderId}` });
-//   } catch (err) {
-//     console.error('Error updating folder:', err);
-//     res.status(500).json({ error: 'Failed to update folder' });
-//   }
-// });
-
-// // Get email counts
-// app.get("/api/emails/counts", async (req, res) => {
-//   try {
-//     const counts = {};
-//     let total = 0;
-//     for (const folderId of VALID_FOLDER_IDS) {
-//       const count = await Email.countDocuments({ folderId });
-//       counts[folderId] = count;
-//       total += count;
-//     }
-//     res.json({ counts, total, categories: VALID_FOLDER_IDS });
-//   } catch (err) {
-//     console.error('Error getting counts:', err);
-//     res.status(500).json({ error: 'Failed to get counts' });
-//   }
-// });
-
-// // ... other routes, recategorize, stats, etc. remain unchanged
-
-// // Serve frontend
-// if (process.env.NODE_ENV === "production") {
-//   app.use(express.static(path.join(__dirname, "../frontend/build")));
-//   app.get("*", (req, res) =>
-//     res.sendFile(path.resolve(__dirname, "../", "frontend", "build", "index.html"))
-//   );
-// } else {
-//   app.get("/", (req, res) => res.send("Please set to production"));
-// }
-
-// // Error handler
-// app.use((err, req, res, next) => {
-//   res.status(res.statusCode || 500).json({ message: err.message, stack: process.env.NODE_ENV === 'production' ? null : err.stack });
-// });
-
-// // Start server
-// const port = process.env.PORT || 5007;
-// app.listen(port, () => {
-//   console.log(`Server running on port ${port}`);
-//   console.log('Email categorization service initialized');
-// });
-
 
 const express = require("express");
 const dotenv = require("dotenv").config();
 const connectDB = require("./config/db");
 const path = require("path");
 const cors = require("cors");
-
 const POP3Client = require('poplib');
 const { simpleParser } = require('mailparser');
 
-// Import Email model and categorization service
+// Your Mongoose models
 const Email = require("./models/emailModel");
-const EmailCategorizationService = require("./services/emailCategorizationService");
-// Import the new SenderPreference model
-const SenderPreference = require("./models/senderPreferenceModel"); 
+const SenderPreference = require("./models/senderPreferenceModel"); // NEW: Import SenderPreference model
 
-// Initialize express app
 const app = express();
-const categorizer = new EmailCategorizationService();
+connectDB(); // Connect to MongoDB
 
-// Connect to database
-connectDB();
-
-// Middleware
+// Middleware to enable Cross-Origin Resource Sharing (CORS) for all routes.
 app.use(cors());
+// Middleware to parse incoming JSON payloads.
 app.use(express.json());
+// Middleware to parse incoming URL-encoded payloads.
 app.use(express.urlencoded({ extended: false }));
 
-// User routes
-app.use("/api/users", require("./routes/userRoutes"));
-
-// Folder routes
-const folderRoutes = require("./routes/folderRoutes");
-app.use("/api/folders", folderRoutes);
-
+// Define valid folder IDs for email categorization.
 const VALID_FOLDER_IDS = [
-  'inbox', 'supplier', 'competitor', 'information', 
+  'inbox', 'supplier', 'competitor', 'information',
   'customers', 'marketing', 'archive'
 ];
 
-// ------------------ Email Fetching and Categorization ------------------
-// Enhanced GET /api/emails route to fetch emails from POP3 and categorize them
+// POP3 Email API route - Fetch, categorize, and save emails
 app.get("/api/emails", async (req, res) => {
+  // Retrieve POP3 connection details from environment variables, with fallbacks.
   const host = process.env.POP3_HOST || 'pop.gmail.com';
-  const port = 995;
+  const pop3Port = 995;
   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-  const password = process.env.POP3_PASS || 'bssr xsrf tjvs pxyu';
+  const password = process.env.POP3_PASS || 'your_app_password'; // Use an App Password for Gmail
 
-  const client = new POP3Client(port, host, {
-    tlserrs: false,
+  // Initialize POP3 client with TLS enabled for secure connection.
+  const client = new POP3Client(pop3Port, host, {
+    tlserrs: false, 
     enabletls: true,
     debug: false,
-    ignoretlserrs: true,
+    ignoretlserrs: true, 
   });
 
-  let emails = [];
-  let responded = false;
-  let categorizationStats = {
-    total: 0,
-    categorized: {},
-    errors: 0
+  let emailsProcessed = 0;
+  let categorization = {
+    totalFetched: 0,
+    newEmails: 0,
+    categorized: {
+      inbox: 0,
+      supplier: 0,
+      competitor: 0,
+      information: 0,
+      customers: 0,
+      marketing: 0,
+      archive: 0
+    }
   };
 
-  client.on('error', (err) => {
-    console.error('POP3 Client Error:', err);
-    if (!responded) {
-      responded = true;
-      return res.status(500).json({ error: err.message });
-    }
-  });
+  // Cache sender preferences to avoid repeated DB lookups inside the 'retr' loop
+  let senderPreferencesCache = {};
 
-  client.on('connect', () => {
-    console.log('Connected to POP3 server');
+  // Event listener for POP3 client connection.
+  client.on("connect", () => {
     client.login(username, password);
   });
 
-  client.on('login', (status) => {
+  // Event listener for POP3 client login.
+  client.on("login", async (status) => { // Made async to await DB call
     if (status) {
-      console.log('Login successful');
-      client.stat();
+      try {
+        // Load all sender preferences into a cache object (senderAddress to folderId)
+        const preferences = await SenderPreference.find({});
+        preferences.forEach(pref => {
+          senderPreferencesCache[pref.senderAddress] = pref.folderId;
+        });
+        console.log(`Loaded ${preferences.length} sender preferences for categorization.`);
+        client.list();
+      } catch (dbError) {
+        console.error("Error loading sender preferences:", dbError);
+        if (!res.headersSent) {
+            res.status(500).json({ message: "Failed to load sender preferences for categorization." });
+        }
+        client.quit();
+      }
     } else {
-      console.error('Login failed');
-      if (!responded) {
-        responded = true;
-        res.status(401).json({ error: "Login failed" });
+      console.error("POP3 Login failed for user:", username);
+      if (!res.headersSent) {
+          res.status(401).json({ message: "POP3 Login failed" });
       }
       client.quit();
     }
   });
 
-  client.on('stat', (status, data) => {
+  // Event listener for POP3 email list retrieval.
+  client.on("list", (status, msgcount) => {
     if (!status) {
-      console.error('STAT command failed');
-      if (!responded) {
-        responded = true;
-        res.status(500).json({ error: "STAT failed" });
+      console.error("Failed to list emails from POP3 server");
+      if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to list emails" });
       }
       client.quit();
-    } else {
-      console.log(`Found ${data.count} emails`);
-      categorizationStats.total = data.count;
-      if (data.count > 0) {
-        retrieveMessage(1, data.count);
+      return;
+    }
+    categorization.totalFetched = msgcount;
+    if (msgcount === 0) {
+      console.log("No new emails on POP3 server.");
+      if (!res.headersSent) {
+          res.json({ message: "No new emails.", categorization });
+      }
+      client.quit();
+      return;
+    }
+    // Retrieve each email one by one.
+    for (let i = 1; i <= msgcount; i++) {
+      client.retr(i);
+    }
+  });
+
+  // Event listener for retrieving individual emails.
+  client.on("retr", async (status, msgnumber, data) => {
+    if (!status) {
+      console.warn(`Failed to retrieve email ${msgnumber}`);
+      emailsProcessed++;
+      if (emailsProcessed === categorization.totalFetched) {
+        if (!res.headersSent) {
+            res.json({ message: "Email sync complete.", categorization });
+        }
+        client.quit();
+      }
+      return;
+    }
+    try {
+      // Parse the raw email data into a structured object.
+      const parsed = await simpleParser(data);
+      let folderId = 'inbox'; // Default folder
+
+      const lowerSubject = parsed.subject ? parsed.subject.toLowerCase() : '';
+      const lowerFrom = parsed.from && parsed.from.text ? parsed.from.text.toLowerCase() : '';
+      const senderAddress = parsed.from?.value?.[0]?.address?.toLowerCase() || ''; // Get clean sender address
+
+     
+      // Prioritize categorization based on existing user preferences for the sender.
+      if (senderAddress && senderPreferencesCache[senderAddress]) {
+        folderId = senderPreferencesCache[senderAddress];
+        console.log(`Email from ${senderAddress} auto-categorized to ${folderId} based on user preference.`);
       } else {
-        if (!responded) {
-          responded = true;
-          res.json({ emails, categorization: categorizationStats });
+        // Existing categorization logic (only if no sender preference found)
+        // Categorize emails based on keywords in subject or sender information.
+        if (lowerSubject.includes('invoice') || lowerFrom.includes('supplier')) {
+          folderId = 'supplier';
+        } else if (lowerSubject.includes('competitor') || lowerFrom.includes('rival') || lowerSubject.includes('vs')) {
+          folderId = 'competitor';
+        } else if (lowerSubject.includes('info') || lowerSubject.includes('update') || lowerSubject.includes('newsletter')) {
+          folderId = 'information';
+        } else if (lowerSubject.includes('customer') || lowerFrom.includes('client')) {
+          folderId = 'customers';
+        } else if (lowerSubject.includes('marketing') || lowerSubject.includes('promo') || lowerSubject.includes('discount')) {
+          folderId = 'marketing';
+        }
+       
+      }
+      
+
+      // Check if the email already exists in the database to prevent duplicates.
+      const existingEmail = await Email.findOne({ messageId: parsed.messageId });
+      if (!existingEmail) {
+        // Create a new email document and save it to the database.
+        const newEmail = new Email({
+          subject: parsed.subject,
+          from: {
+            name: parsed.from?.value?.[0]?.name || '',
+            address: parsed.from?.value?.[0]?.address || '',
+          },
+          date: parsed.date,
+          text: parsed.text,
+          html: parsed.html,
+          messageId: parsed.messageId,
+          folderId: folderId,
+          isRead: false, // Newly fetched emails are unread
+          isStarred: false,
+        });
+        await newEmail.save();
+        categorization.newEmails++;
+        categorization.categorized[folderId]++;
+      }
+    } catch (parseError) {
+      console.error(`Error parsing or saving email ${msgnumber}:`, parseError);
+    } finally {
+      emailsProcessed++;
+      // If all fetched emails have been processed, send the response and quit the client.
+      if (emailsProcessed === categorization.totalFetched) {
+        console.log("All POP3 emails processed.");
+        if (!res.headersSent) {
+            res.json({ message: "Email sync complete.", categorization });
         }
         client.quit();
       }
     }
   });
 
-  async function retrieveMessage(current, total) {
-    client.retr(current);
-    client.once('retr', async (status, msgnumber, data) => {
-      if (status) {
-        try {
-          const parsed = await new Promise((resolve, reject) => {
-            simpleParser(data, (err, result) => {
-              if (err) reject(err);
-              else resolve(result);
-            });
-          });
-
-          const emailData = {
-            subject: parsed.subject || '(No Subject)',
-            from: {
-              name: parsed.from?.value?.[0]?.name || parsed.from?.name || '',
-              address: parsed.from?.value?.[0]?.address || parsed.from?.address || parsed.from?.text || ''
-            },
-            date: parsed.date || new Date(),
-            text: parsed.text || '',
-            html: parsed.html || '',
-            messageId: parsed.messageId || `${Date.now()}-${current}`,
-            folderId: null // Will be set by categorization logic
-          };
-
-          // --- Automated Folder Assignment Logic ---
-          let assignedFolderId = null;
-          const senderAddress = emailData.from.address.toLowerCase();
-
-          // 1. Check for existing sender preference
-          if (senderAddress) {
-            const senderPref = await SenderPreference.findOne({ senderEmail: senderAddress });
-            if (senderPref) {
-              assignedFolderId = senderPref.preferredFolderId;
-              console.log(`🤖 Auto-categorized by preference: "${emailData.subject}" from ${senderAddress} → ${assignedFolderId}`);
-            }
-          }
-          
-          // 2. If no preference, use the EmailCategorizationService
-          if (!assignedFolderId) {
-            assignedFolderId = categorizer.categorizeEmail(emailData);
-            console.log(`🧠 Auto-categorized by rules: "${emailData.subject}" → ${assignedFolderId}`);
-          }
-
-          emailData.folderId = assignedFolderId;
-
-          // Stats
-          if (!categorizationStats.categorized[emailData.folderId]) {
-            categorizationStats.categorized[emailData.folderId] = 0;
-          }
-          categorizationStats.categorized[emailData.folderId]++;
-
-          // Save to DB if not exists
-          try {
-            const existing = await Email.findOne({ messageId: emailData.messageId });
-            if (!existing) {
-              await Email.create(emailData);
-              console.log(`✓ Saved new email: "${emailData.subject}" → ${emailData.folderId}`);
-            } else {
-              // Update folder if different (for recategorization on sync)
-              if (existing.folderId !== emailData.folderId) {
-                await Email.findByIdAndUpdate(existing._id, { folderId: emailData.folderId });
-                console.log(`📁 Updated existing email folder: "${emailData.subject}" → ${emailData.folderId}`);
-              }
-            }
-          } catch (dbErr) {
-            console.error('❌ Error saving email to DB:', dbErr);
-            categorizationStats.errors++;
-          }
-
-          // Add to response
-          emails.push({
-            id: emailData.messageId,
-            subject: emailData.subject,
-            from: emailData.from,
-            date: emailData.date,
-            text: emailData.text.substring(0, 200) + (emailData.text.length > 200 ? '...' : ''),
-            folderId: emailData.folderId
-          });
-
-        } catch (parseErr) {
-          console.error('❌ Error parsing email:', parseErr);
-          categorizationStats.errors++;
-        }
-      } else {
-        console.error(`❌ Failed to retrieve email ${current}`);
-        categorizationStats.errors++;
-      }
-
-      if (current < total) {
-        retrieveMessage(current + 1, total);
-      } else {
-        if (!responded) {
-          responded = true;
-          console.log('📊 Categorization Stats (POP3 Sync):', categorizationStats);
-          res.json({ emails, categorization: categorizationStats });
-        }
-        client.quit();
-      }
-    });
-  }
-
-  setTimeout(() => {
-    if (!responded) {
-      responded = true;
-      res.status(408).json({
-        error: 'Request timeout',
-        partialResults: { emails, categorization: categorizationStats }
-      });
-      client.quit();
+  // Event listener for any POP3 client errors.
+  client.on("error", (err) => {
+    console.error("POP3 client experienced an error:", err);
+    if (!res.headersSent) { // Prevent setting headers twice
+      res.status(500).json({ message: "POP3 client error", error: err.message });
     }
-  }, 45000); // 45 second timeout
+    client.quit();
+  });
+
+  // Event listener for POP3 client disconnection.
+  client.on("quit", () => {
+    console.log("POP3 client disconnected.");
+  });
 });
 
-// GET saved emails with optional folder filter
-app.get("/api/emails/saved", async (req, res) => {
+// Mark email as read (Using PUT for idempotency and full resource update semantics)
+app.put("/api/emails/:emailId/read", async (req, res) => {
   try {
-    const { folderId, limit = 50, page = 1 } = req.query;
-    let filter = {};
-    if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
+    const { emailId } = req.params;
+    // Find the email by ID and update its `isRead` status to true.
+    const email = await Email.findByIdAndUpdate(
+      emailId,
+      {
+        isRead: true,
+        updatedAt: new Date() // Update timestamp
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    res.json({ success: true, email, message: `Email ${emailId} marked as read` });
+  } catch (error) {
+    console.error('Error marking email as read:', error);
+    res.status(500).json({ error: 'Failed to mark email as read' });
+  }
+});
+
+// Mark email as unread
+app.patch("/api/emails/:emailId/unread", async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    // Find the email by ID and update its `isRead` status to false.
+    const email = await Email.findByIdAndUpdate(
+      emailId,
+      {
+        isRead: false,
+        updatedAt: new Date() // Update timestamp
+      },
+      { new: true }
+    );
+
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    res.json({ success: true, email });
+  } catch (error) {
+    console.error('Error marking email as unread:', error);
+    res.status(500).json({ error: 'Failed to mark email as unread' });
+  }
+});
+
+// Get unread count with optional folder filter (can be deprecated by /unread-counts)
+app.get("/api/emails/unread-count", async (req, res) => {
+  try {
+    const { folderId } = req.query;
+    let filter = { isRead: false };
+
+    // Apply folder filter if provided and valid.
+    if (folderId && folderId !== 'all' && VALID_FOLDER_IDS.includes(folderId)) {
       filter.folderId = folderId;
     }
+
+    // Count documents matching the filter.
+    const count = await Email.countDocuments(filter);
+    res.json({ unreadCount: count });
+  } catch (error) {
+    console.error('Error getting unread count:', error);
+    res.status(500).json({ error: 'Failed to get unread count' });
+  }
+});
+
+// Get unread counts for all folders (more comprehensive)
+app.get("/api/emails/unread-counts", async (req, res) => {
+  try {
+    const counts = {};
+    let totalUnread = 0;
+
+    // Iterate through all valid folders and count unread emails for each.
+    for (const folderId of VALID_FOLDER_IDS) {
+      const count = await Email.countDocuments({ folderId, isRead: false });
+      counts[folderId] = count;
+      totalUnread += count;
+    }
+
+    counts.all = totalUnread;
+
+    res.json({ unreadCounts: counts });
+  } catch (error) {
+    console.error('Error getting unread counts:', error);
+    res.status(500).json({ error: 'Failed to get unread counts' });
+  }
+});
+
+// Bulk mark emails as read
+app.patch("/api/emails/bulk-read", async (req, res) => {
+  try {
+    const { emailIds, folderId } = req.body;
+
+    let filter = {};
+
+    // Determine the filter based on whether specific email IDs or a folder ID is provided.
+    if (emailIds && Array.isArray(emailIds) && emailIds.length > 0) {
+      filter._id = { $in: emailIds };
+    } else if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
+      filter.folderId = folderId;
+      filter.isRead = false; // Only mark unread emails in the folder as read
+    } else {
+      return res.status(400).json({ error: 'Either emailIds array with content or a valid folderId is required' });
+    }
+
+    // Update multiple emails matching the filter to `isRead: true`.
+    const result = await Email.updateMany(
+      filter,
+      {
+        isRead: true,
+        updatedAt: new Date()
+      }
+    );
+
+    res.json({
+      success: true,
+      modifiedCount: result.modifiedCount,
+      message: `${result.modifiedCount} emails marked as read`
+    });
+  } catch (error) {
+    console.error('Error bulk marking emails as read:', error);
+    res.status(500).json({ error: 'Failed to bulk mark emails as read' });
+  }
+});
+
+
+// Get saved emails from DB (with optional folder, search, pagination, and unread filter)
+app.get("/api/emails/saved", async (req, res) => {
+  try {
+    const { folderId, limit = 50, page = 1, unreadOnly, q } = req.query;
+    let filter = {};
+
+    // Apply folder filter if a specific folder is requested.
+    if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
+      filter.folderId = folderId;
+    } else if (folderId === 'all') {
+      // No folder filter needed for 'all'
+    }
+
+    // Apply unread filter if `unreadOnly` is true.
+    if (unreadOnly === 'true') {
+      filter.isRead = false;
+    }
+
+    // Apply search query across subject, sender name, sender address, and text content.
+    if (q) {
+      filter.$or = [
+        { subject: { $regex: q, $options: 'i' } },
+        { 'from.name': { $regex: q, $options: 'i' } },
+        { 'from.address': { $regex: q, $options: 'i' } },
+        { text: { $regex: q, $options: 'i' } }
+      ];
+    }
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Fetch emails based on filter, sort by date, apply limit and skip for pagination.
     const emails = await Email.find(filter)
       .sort({ date: -1 })
       .limit(parseInt(limit))
       .skip(skip);
+
+    // Get total count of emails matching the filter.
     const total = await Email.countDocuments(filter);
-    res.json({ emails, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
+    // Get total unread count of emails matching the filter.
+    const unreadCount = await Email.countDocuments({ ...filter, isRead: false });
+
+    res.json({
+      emails,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        unreadCount
+      }
+    });
   } catch (err) {
     console.error('Error fetching saved emails:', err);
     res.status(500).json({ error: 'Failed to fetch saved emails' });
   }
 });
 
-// Move email to folder (learn from correction)
-app.put("/api/emails/:emailId/folder", async (req, res) => {
-  try {
-    const { emailId } = req.params;
-    const { folderId } = req.body; // The new folder ID
-    
-    if (!VALID_FOLDER_IDS.includes(folderId)) {
-      return res.status(400).json({ error: `Invalid folder ID. Must be one of: ${VALID_FOLDER_IDS.join(', ')}` });
-    }
-    
-    const email = await Email.findById(emailId);
-    if (!email) {
-      return res.status(404).json({ error: 'Email not found' });
-    }
-
-    const oldFolderId = email.folderId;
-    const senderAddress = (email.from?.address || '').toLowerCase();
-
-    // Update the email's folder
-    const result = await Email.findByIdAndUpdate(
-      emailId, 
-      { folderId: folderId },
-      { new: true }
-    );
-    
-    // --- Learning from User Correction ---
-    // If the folder was changed, save or update the sender preference
-    if (oldFolderId !== folderId && senderAddress) {
-      await SenderPreference.findOneAndUpdate(
-        { senderEmail: senderAddress }, // Find by sender email
-        { preferredFolderId: folderId }, // Set the new preferred folder
-        { upsert: true, new: true } // Create if not exists, return new document
-      );
-      console.log(`🎯 Learned preference: Future emails from ${senderAddress} will go to ${folderId}`);
-    }
-    
-    // Also, inform the categorization service about the correction for its internal learning
-    // This part is specific to how your EmailCategorizationService handles learning.
-    // Assuming it has a method to learn from user corrections.
-    // categorizer.learnFromCorrection(email, folderId, oldFolderId); // Uncomment if EmailCategorizationService has this method
-
-    res.json({
-      message: `Email moved to ${folderId} folder`,
-      email: result,
-      change: `${oldFolderId} → ${folderId}`
-    });
-    
-  } catch (err) {
-    console.error('Error updating folder:', err);
-    res.status(500).json({ error: 'Failed to update folder' });
-  }
-});
-
-// Get email counts
+// Get email counts per folder (includes unread counts for each)
 app.get("/api/emails/counts", async (req, res) => {
   try {
     const counts = {};
-    let total = 0;
+    const unreadCounts = {};
+    let totalAllEmails = 0;
+    let totalUnreadAllEmails = 0;
+
+    totalAllEmails = await Email.countDocuments({});
+    totalUnreadAllEmails = await Email.countDocuments({ isRead: false });
+
+    // Populate counts and unread counts for each valid folder.
     for (const folderId of VALID_FOLDER_IDS) {
       const count = await Email.countDocuments({ folderId });
+      const unreadCount = await Email.countDocuments({ folderId, isRead: false });
+
       counts[folderId] = count;
-      total += count;
+      unreadCounts[folderId] = unreadCount;
     }
-    res.json({ counts, total, categories: VALID_FOLDER_IDS });
+
+    counts.all = totalAllEmails;
+    unreadCounts.all = totalUnreadAllEmails;
+
+    res.json({
+      counts,
+      unreadCounts,
+      total: totalAllEmails,
+      totalUnread: totalUnreadAllEmails,
+      categories: VALID_FOLDER_IDS
+    });
   } catch (err) {
     console.error('Error getting counts:', err);
     res.status(500).json({ error: 'Failed to get counts' });
   }
 });
 
-// Bulk categorize existing emails (utility endpoint) - using updated categorization
-app.post("/api/emails/recategorize", async (req, res) => {
-  try {
-    console.log('🔄 Starting email recategorization...');
-    
-    // Fetch all emails (or a batch if too many)
-    const emailsToRecategorize = await Email.find({}); 
-    
-    if (emailsToRecategorize.length === 0) {
-      return res.json({
-        message: 'No emails found to recategorize',
-        stats: { total: 0, updated: 0, errors: 0 }
-      });
-    }
-
-    let updatedCount = 0;
-    let errorsCount = 0;
-    const categoryChanges = {};
-
-    for (const email of emailsToRecategorize) {
-      try {
-        const oldFolderId = email.folderId;
-        let newFolderId = null;
-
-        const senderAddress = (email.from?.address || '').toLowerCase();
-
-        // 1. Check for existing sender preference
-        if (senderAddress) {
-          const senderPref = await SenderPreference.findOne({ senderEmail: senderAddress });
-          if (senderPref) {
-            newFolderId = senderPref.preferredFolderId;
-          }
-        }
-        
-        // 2. If no preference, use the EmailCategorizationService
-        if (!newFolderId) {
-          newFolderId = categorizer.categorizeEmail(email);
-        }
-
-        if (oldFolderId !== newFolderId) {
-          await Email.findByIdAndUpdate(email._id, { folderId: newFolderId });
-          updatedCount++;
-          
-          const changeKey = `${oldFolderId || 'none'} → ${newFolderId}`;
-          categoryChanges[changeKey] = (categoryChanges[changeKey] || 0) + 1;
-          
-          console.log(`📁 Recategorized: "${email.subject}" ${oldFolderId || 'unassigned'} → ${newFolderId}`);
-        }
-      } catch (error) {
-        console.error(`❌ Error recategorizing email ${email._id}:`, error);
-        errorsCount++;
-      }
-    }
-
-    // Get final category counts
-    const finalCounts = {};
-    for (const folderId of VALID_FOLDER_IDS) {
-      finalCounts[folderId] = await Email.countDocuments({ folderId });
-    }
-
-    console.log('✅ Recategorization complete');
-    
-    res.json({
-      message: `Recategorization complete: ${updatedCount} emails updated`,
-      stats: {
-        total: emailsToRecategorize.length,
-        updated: updatedCount,
-        errors: errorsCount,
-        unchanged: emailsToRecategorize.length - updatedCount - errorsCount
-      },
-      changes: categoryChanges,
-      finalCounts: finalCounts
-    });
-    
-  } catch (error) {
-    console.error('❌ Error during recategorization:', error);
-    res.status(500).json({ error: 'Failed to recategorize emails' });
-  }
-});
-
-// Get categorization statistics and insights (remains largely the same, but now considering SenderPreference influence)
-app.get("/api/emails/categorization/stats", async (req, res) => {
-  try {
-    const stats = {
-      categories: categorizer.getCategoryInfo(), // Rules-based info
-      senderPreferences: {}, // New: info about learned preferences
-      emailCounts: {},
-      totalEmails: 0,
-      lastUpdated: new Date(),
-      validFolders: VALID_FOLDER_IDS
-    };
-    
-    // Get email counts per category
-    for (const folderId of VALID_FOLDER_IDS) {
-      const count = await Email.countDocuments({ folderId });
-      stats.emailCounts[folderId] = count;
-      stats.totalEmails += count;
-    }
-
-    // Get sender preference counts
-    const senderPrefs = await SenderPreference.find({});
-    senderPrefs.forEach(pref => {
-        stats.senderPreferences[pref.senderEmail] = pref.preferredFolderId;
-    });
-    
-    // Get recent categorization activity
-    const recentEmails = await Email.find({})
-      .sort({ createdAt: -1 })
-      .limit(100);
-    
-    if (recentEmails.length > 0) {
-      // This might need adjustment in EmailCategorizationService if its bulkCategorize
-      // doesn't account for SenderPreference directly. For now, it reflects rule-based.
-      const recentStats = categorizer.bulkCategorize(recentEmails); 
-      stats.recentActivity = recentStats;
-    }
-    
-    res.json(stats);
-  } catch (error) {
-    console.error('Error getting categorization stats:', error);
-    res.status(500).json({ error: 'Failed to get categorization stats' });
-  }
-});
-
-// Add custom categorization rules (remains the same, uses EmailCategorizationService)
-app.post("/api/emails/categorization/add-rule", async (req, res) => {
-  try {
-    const { categoryId, rules } = req.body;
-    
-    if (!categoryId || !rules) {
-      return res.status(400).json({ 
-        error: 'categoryId and rules are required' 
-      });
-    }
-    
-    // Validate rules structure
-    const validRuleTypes = ['senderKeywords', 'subjectKeywords', 'domainPatterns'];
-    const hasValidRules = validRuleTypes.some(ruleType => 
-      rules[ruleType] && Array.isArray(rules[ruleType])
-    );
-    
-    if (!hasValidRules) {
-      return res.status(400).json({
-        error: `Rules must contain at least one of: ${validRuleTypes.join(', ')}`
-      });
-    }
-    
-    categorizer.addCustomRule(categoryId, rules);
-    
-    res.json({
-      message: `Custom categorization rule added for category: ${categoryId}`,
-      rules: rules,
-      categoryInfo: categorizer.getCategoryInfo()
-    });
-    
-  } catch (error) {
-    console.error('Error adding custom rule:', error);
-    res.status(500).json({ error: 'Failed to add custom rule' });
-  }
-});
-
-// Get single email details
-app.get("/api/emails/:emailId", async (req, res) => {
+// Move email to different folder - UPDATED TO SAVE SENDER PREFERENCE AND RE-CATEGORIZE PAST EMAILS
+app.put("/api/emails/:emailId/folder", async (req, res) => {
   try {
     const { emailId } = req.params;
-    const email = await Email.findById(emailId);
-    
-    if (!email) {
+    const { folderId: newFolderId } = req.body;
+
+    // Validate the new folder ID.
+    if (!newFolderId || !VALID_FOLDER_IDS.includes(newFolderId)) {
+      return res.status(400).json({ error: 'Invalid folder ID' });
+    }
+
+    // Find the email to get its sender's address
+    const emailToMove = await Email.findById(emailId);
+    if (!emailToMove) {
       return res.status(404).json({ error: 'Email not found' });
     }
-    
-    res.json(email);
-  } catch (error) {
-    console.error('Error fetching email:', error);
-    res.status(500).json({ error: 'Failed to fetch email' });
-  }
-});
 
-// Route to get count of saved emails (backward compatibility)
-app.get("/api/emails/count", async (req, res) => {
-  try {
-    const count = await Email.countDocuments();
-    res.json({ count });
-  } catch (error) {
-    console.error('Error counting emails:', error);
-    res.status(500).json({ error: 'Failed to count emails' });
-  }
-});
+    const senderAddress = emailToMove.from.address.toLowerCase();
 
-// Search emails
-app.get("/api/emails/search", async (req, res) => {
-  try {
-    const { q, folderId, limit = 20 } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-    
-    let filter = {
-      $or: [
-        { subject: { $regex: q, $options: 'i' } },
-        { 'from.name': { $regex: q, $options: 'i' } },
-        { 'from.address': { $regex: q, $options: 'i' } },
-        { text: { $regex: q, $options: 'i' } }
-      ]
-    };
-    
-    if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-      filter.folderId = folderId;
-    }
-    
-    const emails = await Email.find(filter)
-      .sort({ date: -1 })
-      .limit(parseInt(limit));
-    
+    //  Update the specific email's folderId
+    const updatedEmail = await Email.findByIdAndUpdate(
+      emailId,
+      {
+        folderId: newFolderId,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    // 3Save or update the sender's preference for future categorization
+    // This creates or updates a document in SenderPreference to remember the user's chosen folder for this sender.
+    await SenderPreference.findOneAndUpdate(
+      { senderAddress: senderAddress },
+      { folderId: newFolderId },
+      { upsert: true, new: true } // upsert creates if not found, new returns updated doc
+    );
+    console.log(`Sender preference saved for ${senderAddress} -> ${newFolderId}`);
+
+    // Re-categorize all *other* existing emails from this sender to the new folder
+    // This ensures consistency by moving all past emails from the same sender to the new preferred folder.
+    const bulkUpdateResult = await Email.updateMany(
+      {
+        'from.address': senderAddress,
+        _id: { $ne: emailId }, // Exclude the email we just moved
+        folderId: { $ne: newFolderId } // Only update if not already in the target folder
+      },
+      {
+        folderId: newFolderId,
+        updatedAt: new Date()
+      }
+    );
+    console.log(`Re-categorized ${bulkUpdateResult.modifiedCount} other emails from ${senderAddress}.`);
+
+
     res.json({
-      query: q,
-      results: emails,
-      total: emails.length
+      message: `Email ${emailId} moved to folder ${newFolderId}. Also updated preference and re-categorized ${bulkUpdateResult.modifiedCount} other emails.`,
+      email: updatedEmail
     });
-    
+
   } catch (error) {
-    console.error('Error searching emails:', error);
-    res.status(500).json({ error: 'Failed to search emails' });
+    console.error('Error moving email and updating preference:', error);
+    res.status(500).json({ error: 'Failed to move email and update preference' });
   }
 });
 
-// Serve frontend
+// Serve frontend in production
+// In production, serve the static files of the React frontend.
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")));
   app.get("*", (req, res) =>
-    res.sendFile(path.resolve(__dirname, "../", "frontend", "build", "index.html"))
+    res.sendFile(path.resolve(__dirname, "../frontend/build", "index.html"))
   );
 } else {
-  app.get("/", (req, res) => res.send("Please set to production"));
+  // Simple message for development
+  app.get("/", (req, res) => res.send("Please set NODE_ENV to production to serve frontend, or access frontend via its own dev server (e.g., http://localhost:3000)"));
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  res.status(res.statusCode || 500).json({ message: err.message, stack: process.env.NODE_ENV === 'production' ? null : err.stack });
-});
-
-// Start server
-const port = process.env.PORT || 5007;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log('Email categorization service initialized');
-  console.log(`Available folders: ${VALID_FOLDER_IDS.join(', ')}`);
-});
-
+const PORT = process.env.PORT || 5007;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
