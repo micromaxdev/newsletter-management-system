@@ -2,25 +2,16 @@
 const asyncHandler = require("express-async-handler");
 const FolderService = require("../services/folderService");
 
-// @desc    Get all sender folders
-// @route   GET /api/folders
-// @access  Public
 const getAllFolders = asyncHandler(async (req, res) => {
   const folders = await FolderService.getAllFolders();
   res.json(folders);
 });
 
-// @desc    Get folders grouped by domain
-// @route   GET /api/folders/by-domain
-// @access  Public
 const getFoldersByDomain = asyncHandler(async (req, res) => {
   const foldersByDomain = await FolderService.getFoldersByDomain();
   res.json(foldersByDomain);
 });
 
-// @desc    Get emails from a specific folder
-// @route   GET /api/folders/:folderName/emails
-// @access  Public
 const getEmailsByFolder = asyncHandler(async (req, res) => {
   const { folderName } = req.params;
   const limit = parseInt(req.query.limit) || 20;
@@ -30,9 +21,6 @@ const getEmailsByFolder = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-// @desc    Search folders
-// @route   GET /api/folders/search
-// @access  Public
 const searchFolders = asyncHandler(async (req, res) => {
   const { q } = req.query;
   
@@ -45,17 +33,11 @@ const searchFolders = asyncHandler(async (req, res) => {
   res.json(folders);
 });
 
-// @desc    Get folder statistics
-// @route   GET /api/folders/stats
-// @access  Public
 const getFolderStats = asyncHandler(async (req, res) => {
   const stats = await FolderService.getFolderStats();
   res.json(stats);
 });
 
-// @desc    Organize existing emails into folders
-// @route   POST /api/folders/organize
-// @access  Public
 const organizeExistingEmails = asyncHandler(async (req, res) => {
   const result = await FolderService.organizeExistingEmails();
   res.json({
