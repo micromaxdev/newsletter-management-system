@@ -1,39 +1,3 @@
-// import React, { useEffect, useState } from "react";
-
-// function EmailList() {
-//   const [emails, setEmails] = useState([]);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     fetch("/api/emails")
-//       .then((res) => res.json())
-//       .then((data) => {
-//         setEmails(data);
-//         setLoading(false);
-//       });
-//   }, []);
-
-//   if (loading) return <div>Loading emails...</div>;
-
-//   return (
-//     <div>
-//       <h2>Inbox</h2>
-//       {emails.length === 0 && <div>No emails found.</div>}
-//       <ul>
-//         {emails.map((email, idx) => (
-//           <li key={idx} style={{marginBottom: "2em"}}>
-//             <strong>Subject:</strong> {email.subject} <br />
-//             <strong>From:</strong> {email.from} <br />
-//             <strong>Date:</strong> {email.date} <br />
-//             <pre style={{whiteSpace: "pre-wrap"}}>{email.text}</pre>
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// }
-
-// export default EmailList;
 
 import React, { useEffect, useState } from "react";
 
@@ -42,8 +6,9 @@ function EmailList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetches emails from the API when the component mounts.
   useEffect(() => {
-    fetch("http://localhost:5000/api/emails") // Adjust this if your backend runs elsewhere
+    fetch("http://localhost:5000/api/emails") 
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch emails");
         return res.json();
@@ -56,7 +21,7 @@ function EmailList() {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   return (
     <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
@@ -86,7 +51,7 @@ function EmailList() {
             </p>
             <pre style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "1rem" }}>
               {email.text || "No message content"}
-            </pre>
+            </pre>                                                                                                              
           </li>
         ))}
       </ul>
