@@ -1,39 +1,3 @@
-// import React, { useEffect, useState } from "react";
-
-// function EmailList() {
-//   const [emails, setEmails] = useState([]);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     fetch("/api/emails")
-//       .then((res) => res.json())
-//       .then((data) => {
-//         setEmails(data);
-//         setLoading(false);
-//       });
-//   }, []);
-
-//   if (loading) return <div>Loading emails...</div>;
-
-//   return (
-//     <div>
-//       <h2>Inbox</h2>
-//       {emails.length === 0 && <div>No emails found.</div>}
-//       <ul>
-//         {emails.map((email, idx) => (
-//           <li key={idx} style={{marginBottom: "2em"}}>
-//             <strong>Subject:</strong> {email.subject} <br />
-//             <strong>From:</strong> {email.from} <br />
-//             <strong>Date:</strong> {email.date} <br />
-//             <pre style={{whiteSpace: "pre-wrap"}}>{email.text}</pre>
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// }
-
-// export default EmailList;
 
 import React, { useEffect, useState } from "react";
 
