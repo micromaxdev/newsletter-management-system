@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState } from "react";
 
 function EmailList() {
@@ -7,7 +8,7 @@ function EmailList() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/emails") 
+    fetch("http://localhost:5007/api/emails") 
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch emails");
         return res.json();
