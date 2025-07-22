@@ -8,9 +8,12 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.9.0",
+    "cors": "^2.8.5",
     "dompurify": "^3.2.6",
+    "express-async-handler": "^1.2.0",
     "lucide-react": "^0.513.0",
     "mailparser": "^3.7.3",
+    "mongoose": "^8.16.4",
     "poplib": "^0.1.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -20,6 +23,7 @@
     "yarn": "^1.22.22"
   },
   "scripts": {
+    "server": "node backend/server.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
