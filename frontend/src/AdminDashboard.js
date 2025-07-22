@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Mail, Plus, Trash2, Eye, EyeOff, Shield, Check, X } from 'lucide-react';
 
 const AdminDashboard = () => {
-  // Admin Auth State 
+  // --- Admin Auth State ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -14,12 +14,12 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Inbox Email State
+  // --- Inbox Email State ---
   const [emails, setEmails] = useState([]);
   const [loadingEmails, setLoadingEmails] = useState(true);
   const [emailError, setEmailError] = useState("");
 
-  // Admin Auth Logic 
+  // --- Admin Auth Logic ---
   const adminCredentials = {
     username: 'admin',
     password: 'admin123'
@@ -91,7 +91,7 @@ const AdminDashboard = () => {
     }
   }, [message]);
 
-  // Fetch Inbox Emails
+  // --- Fetch Inbox Emails ---
   useEffect(() => {
     setLoadingEmails(true);
     setEmailError("");

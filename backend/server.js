@@ -11,6 +11,12 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 connectDB(); // Connect to MongoDB
+// One-time cleanup: remove sender preferences with null senderAddress
+const SenderPreference = require('./models/senderPreferenceModel');
+connectDB();
+SenderPreference.deleteMany({ senderAddress: null })
+  .then(() => console.log('Cleaned up sender preferences with null senderAddress'))
+  .catch(err => console.error('Cleanup error:', err));
 
 // Middleware to enable Cross-Origin Resource Sharing (CORS) for all routes.
 app.use(cors());

@@ -1,0 +1,439 @@
+
+// const EmailDetailModal = ({ email, onClose }) => {
+//   if (!email) return null; // Ensure an email object is passed
+
+//   const formatSender = (from) => {
+//     if (!from) return "Unknown";
+//     if (typeof from === "string") return from;
+//     return from.name && from.address
+//       ? `${from.name} <${from.address}>`
+//       : from.address || "Unknown";
+//   };
+
+//   const formatDate = (dateString) => {
+//     const date = new Date(dateString);
+//     const now = new Date();
+//     const diffTime = Math.abs(now - date);
+//     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+//     if (diffDays === 1) return 'Today';
+//     if (diffDays === 2) return 'Yesterday';
+//     if (diffDays <= 7) return `${diffDays - 1} days ago`;
+//     return date.toLocaleDateString();
+//   };
+
+//   return (
+//     <div
+//       style={{
+//         position: "fixed",
+//         top: 0,
+//         left: 0,
+//         right: 0,
+//         bottom: 0,
+//         backgroundColor: "rgba(0,0,0,0.6)", // Darker overlay
+//         display: "flex",
+//         alignItems: "center",
+//         justifyContent: "center",
+//         zIndex: 1000,
+//         padding: "1rem", // Add some padding for smaller screens
+//       }}
+//     >
+//       <div
+//         style={{
+//           backgroundColor: "white",
+//           borderRadius: "12px",
+//           maxWidth: "900px", // Slightly wider for email content
+//           width: "95%", // Use percentage for responsiveness
+//           maxHeight: "90vh",
+//           overflowY: "auto",
+//           position: "relative",
+//           padding: "2rem", // More internal padding
+//           boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+//         }}
+//       >
+//         <button
+//           onClick={onClose}
+//           style={{
+//             position: "absolute",
+//             top: "1rem",
+//             right: "1rem",
+//             backgroundColor: "#ef4444", // Red for close
+//             color: "white",
+//             padding: "8px 16px",
+//             border: "none",
+//             borderRadius: "6px",
+//             cursor: "pointer",
+//             zIndex: 1001,
+//             fontSize: "14px",
+//             display: "flex",
+//             alignItems: "center",
+//             gap: "4px"
+//           }}
+//         >
+//           <X size={16} /> Close
+//         </button>
+
+//         <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#1e293b", paddingRight: "60px" }}>
+//           {email.subject || "(No Subject)"}
+//         </h2>
+//         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
+//           <p style={{ fontSize: "14px", color: "#64748b", margin: 0, display: "flex", alignItems: "center" }}>
+//             <User size={14} style={{ marginRight: "4px" }} />
+//             <strong>From:</strong> {formatSender(email.from)}
+//           </p>
+//           <p style={{ fontSize: "14px", color: "#64748b", margin: 0, display: "flex", alignItems: "center" }}>
+//             <Calendar size={14} style={{ marginRight: "4px" }} />
+//             <strong>Date:</strong> {email.date ? formatDate(email.date) : "N/A"}
+//           </p>
+//           <p style={{ fontSize: "14px", color: "#64748b", margin: 0, display: "flex", alignItems: "center" }}>
+//             <Folder size={14} style={{ marginRight: "4px" }} />
+//             <strong>Current Folder:</strong> {email.folderId ? email.folderId.charAt(0).toUpperCase() + email.folderId.slice(1) : 'Unknown'}
+//           </p>
+//         </div>
+
+//         {/* Display HTML content if available, otherwise plain text */}
+//         {email.html ? (
+//           <div
+//             style={{
+//               border: "1px solid #e2e8f0",
+//               borderRadius: "8px",
+//               padding: "1rem",
+//               backgroundColor: "#f8fafc",
+//               maxHeight: "60vh", // Limit height of content
+//               overflowY: "auto",
+//             }}
+//             dangerouslySetInnerHTML={{ __html: email.html }}
+//           />
+//         ) : email.text ? (
+//           <div
+//             style={{
+//               border: "1px solid #e2e8f0",
+//               borderRadius: "8px",
+//               padding: "1rem",
+//               backgroundColor: "#f8fafc",
+//               maxHeight: "60vh",
+//               overflowY: "auto",
+//               whiteSpace: "pre-wrap", // Preserve whitespace and line breaks
+//               wordBreak: "break-word", // Break long words
+//               fontSize: "15px",
+//               lineHeight: "1.6",
+//               color: "#334155"
+//             }}
+//           >
+//             {email.text}
+//           </div>
+//         ) : (
+//           <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
+//             <AlertCircle size={24} style={{ marginBottom: "1rem" }} />
+//             <p>No readable content (text or HTML) for this email.</p>
+//           </div>
+//         )}
+
+//         {/* Optional: Add folder move functionality directly in the modal */}
+//         <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "10px" }}>
+//             <label htmlFor="move-folder-select" style={{ fontSize: "14px", color: "#334155", fontWeight: "500" }}>Move to:</label>
+//             <select
+//                 id="move-folder-select"
+//                 value={email.folderId || 'inbox'}
+//                 onChange={(e) => {
+//                     onMove(email._id, e.target.value); // Call a prop function to handle move
+//                     onClose(); // Close modal after moving
+//                 }}
+//                 style={{
+//                     fontSize: "14px",
+//                     padding: "8px 12px",
+//                     border: "1px solid #ccc",
+//                     borderRadius: "6px",
+//                     backgroundColor: "white",
+//                     cursor: "pointer"
+//                 }}
+//             >
+               
+//                 {['inbox', 'supplier', 'competitor', 'information', 'customers', 'marketing', 'archive'].map(fId => (
+//                     <option key={fId} value={fId}>
+//                         {fId.charAt(0).toUpperCase() + fId.slice(1)}
+//                     </option>
+//                 ))}
+//             </select>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };import React from "react";
+import {
+  User,
+  Calendar,
+  Folder,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+  X,
+} from "lucide-react";
+
+const EmailDetailModal = ({
+  email,
+  onClose,
+  folderConfig,
+  onMoveEmail,
+  displayedEmails,
+  onSelectEmail,
+  onMarkAsRead,
+}) => {
+  if (!email) return null;
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return "Today";
+    if (diffDays === 2) return "Yesterday";
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const formatSender = (from) => {
+    if (!from) return "Unknown";
+    if (typeof from === "string") return from;
+    return from.name && from.address
+      ? `${from.name} <${from.address}>`
+      : from.address || "Unknown";
+  };
+
+  const currentIndex = displayedEmails.findIndex((e) => e._id === email._id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < displayedEmails.length - 1;
+
+  const handlePrevious = () => {
+    if (hasPrevious) {
+      const prevEmail = displayedEmails[currentIndex - 1];
+      onSelectEmail(prevEmail);
+      if (!prevEmail.isRead) {
+        onMarkAsRead(prevEmail._id);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (hasNext) {
+      const nextEmail = displayedEmails[currentIndex + 1];
+      onSelectEmail(nextEmail);
+      if (!nextEmail.isRead) {
+        onMarkAsRead(nextEmail._id);
+      }
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          maxWidth: "900px",
+          width: "90%",
+          maxHeight: "90vh",
+          overflow: "hidden",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          padding: "2rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.5rem",
+              margin: 0,
+              color: "#1e293b",
+              flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {email.subject || "(No Subject)"}
+          </h2>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <button
+              onClick={handlePrevious}
+              disabled={!hasPrevious}
+              style={{
+                backgroundColor: hasPrevious ? "#4f46e5" : "#ccc",
+                color: "white",
+                padding: "8px 12px",
+                border: "none",
+                borderRadius: "6px",
+                cursor: hasPrevious ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                opacity: hasPrevious ? 1 : 0.6,
+              }}
+            >
+              <ChevronLeft size={16} style={{ marginRight: "4px" }} /> Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!hasNext}
+              style={{
+                backgroundColor: hasNext ? "#4f46e5" : "#ccc",
+                color: "white",
+                padding: "8px 12px",
+                border: "none",
+                borderRadius: "6px",
+                cursor: hasNext ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                opacity: hasNext ? 1 : 0.6,
+              }}
+            >
+              Next <ChevronRightIcon size={16} style={{ marginLeft: "4px" }} />
+            </button>
+            <select
+              value={email.folderId || "inbox"}
+              onChange={(e) => onMoveEmail(email._id, e.target.value)}
+              style={{
+                fontSize: "14px",
+                padding: "6px 10px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "6px",
+                backgroundColor: "white",
+                cursor: "pointer",
+              }}
+            >
+              {folderConfig.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  Move to {folder.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={onClose}
+              style={{
+                backgroundColor: "#dc2626",
+                color: "white",
+                padding: "8px",
+                border: "none",
+                borderRadius: "50%",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "32px",
+                height: "32px",
+                flexShrink: 0,
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1.5rem",
+            marginBottom: "1.5rem",
+            borderBottom: "1px solid #e2e8f0",
+            paddingBottom: "1rem",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "15px",
+              color: "#64748b",
+              margin: 0,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <User size={16} style={{ marginRight: "6px" }} />
+            <strong>From:</strong> {formatSender(email.from)}
+          </p>
+          <p
+            style={{
+              fontSize: "15px",
+              color: "#64748b",
+              margin: 0,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Calendar size={16} style={{ marginRight: "6px" }} />
+            <strong>Date:</strong> {email.date ? formatDate(email.date) : "N/A"}
+          </p>
+          <p
+            style={{
+              fontSize: "15px",
+              color: "#64748b",
+              margin: 0,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Folder size={16} style={{ marginRight: "6px" }} />
+            <strong>Current Folder:</strong>{" "}
+            {folderConfig.find((f) => f.id === email.folderId)?.name ||
+              email.folderId ||
+              "Unknown"}
+          </p>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            paddingRight: "10px",
+          }}
+        >
+          {email.html ? (
+            <div dangerouslySetInnerHTML={{ __html: email.html }} />
+          ) : email.text ? (
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                fontSize: "1rem",
+                lineHeight: "1.6",
+                color: "#374151",
+              }}
+            >
+              {email.text}
+            </p>
+          ) : (
+            <p
+              style={{
+                fontSize: "1rem",
+                color: "#64748b",
+                textAlign: "center",
+                padding: "2rem",
+              }}
+            >
+              No readable content (text or HTML) for this email.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EmailDetailModal;

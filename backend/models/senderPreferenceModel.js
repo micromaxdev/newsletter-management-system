@@ -1,23 +1,50 @@
+
+// const mongoose = require('mongoose');
+
+// const senderPreferenceSchema = mongoose.Schema(
+//   {
+//     senderAddress: {
+//       type: String,
+//       required: true,
+//       unique: true, // A sender should only have one preferred folder
+//       lowercase: true,
+//       trim: true,
+//     },
+//     folderId: {
+//       type: String,
+//       required: true,
+     
+//     },
+//   },
+//   {
+//     timestamps: true, // To track when the preference was set/updated
+//   }
+// );
+
+// module.exports = mongoose.model('SenderPreference', senderPreferenceSchema);
+
+// models/senderPreferenceModel.js
+
 const mongoose = require('mongoose');
 
 const senderPreferenceSchema = mongoose.Schema(
   {
-    senderEmail: {
+    senderAddress: {
       type: String,
-      required: [true, 'Please add a sender email'],
-      unique: true, // Ensure one preference per sender email
-      lowercase: true, // Store emails in lowercase for consistency
+      required: true,
+      unique: true,
+      sparse: true, // <--- This is the key addition to fix the duplicate key error
+      lowercase: true,
       trim: true,
     },
-    preferredFolderId: {
+    folderId: {
       type: String,
-      required: [true, 'Please add a preferred folder ID'],
+      required: true,
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt timestamps
+    timestamps: true,
   }
 );
 
 module.exports = mongoose.model('SenderPreference', senderPreferenceSchema);
-
