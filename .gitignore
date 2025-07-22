@@ -134,3 +134,10 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+*.lock
+frontend/package.json
+frontend/yarn.lock
+frontend/package.json
+frontend/yarn.lock
+*.json
+*.lock
