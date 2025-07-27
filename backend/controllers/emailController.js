@@ -1,213 +1,3 @@
-// const asyncHandler = require('express-async-handler');
-// const POP3Client = require('poplib');
-// const { simpleParser } = require('mailparser');
-// const Email = require('../models/emailModel');
-// const SenderPreference = require('../models/senderPreferenceModel');
-
-// // Define valid folder IDs (ensure this matches what you had in the past code if different)
-// const VALID_FOLDER_IDS = [
-//   'inbox', 'supplier', 'competitor', 'information',
-//   'customers', 'marketing', 'archive'
-//   // Make sure to remove 'spam', 'important' if they weren't in your preferred old list
-// ];
-
-// const getEmails = asyncHandler(async (req, res) => {
-//   const host = process.env.POP3_HOST || 'pop.gmail.com';
-//   const pop3Port = 995;
-//   const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-//   const password = process.env.POP3_PASS || 'your_app_password'; // Use an App Password for Gmail
-
-//   const client = new POP3Client(pop3Port, host, {
-//     tlserrs: false,
-//     enabletls: true,
-//     debug: false,
-//     ignoretlserrs: true,
-//   });
-
-//   let emailsProcessed = 0;
-//   let categorization = {
-//     totalFetched: 0,
-//     newEmails: 0,
-//     categorized: {
-//       inbox: 0,
-//       supplier: 0,
-//       competitor: 0,
-//       information: 0,
-//       customers: 0,
-//       marketing: 0,
-//       archive: 0
-//     }
-//   };
-
-//   let senderPreferencesCache = {};
-//   let responded = false; // Flag to prevent multiple responses
-
-//   const requestTimeout = setTimeout(() => {
-//     if (!responded) {
-//       responded = true;
-//       console.warn("POP3 email sync timed out.");
-//       client.quit();
-//       res.status(504).json({ message: "Email sync timed out." });
-//     }
-//   }, 30000); // 30-second timeout
-
-//   client.on("connect", () => {
-//     console.log("POP3 connected");
-//     client.login(username, password);
-//   });
-
-//   client.on("login", async (status) => {
-//     console.log("POP3 login status:", status);
-//     if (status) {
-//       try {
-//         const preferences = await SenderPreference.find({});
-//         preferences.forEach(pref => {
-//           senderPreferencesCache[pref.senderAddress] = pref.folderId;
-//         });
-//         console.log(`Loaded ${preferences.length} sender preferences for categorization.`);
-//         client.list();
-//       } catch (dbError) {
-//         console.error("Error loading sender preferences:", dbError);
-//         if (!responded) {
-//           responded = true;
-//           res.status(500).json({ message: "Failed to load sender preferences for categorization." });
-//         }
-//         client.quit();
-//         clearTimeout(requestTimeout); // Clear timeout on early response
-//       }
-//     } else {
-//       console.error("POP3 Login failed for user:", username);
-//       if (!responded) {
-//         responded = true;
-//         res.status(401).json({ message: "POP3 Login failed" });
-//       }
-//       client.quit();
-//       clearTimeout(requestTimeout); // Clear timeout on early response
-//     }
-//   });
-
-//   client.on("list", (status, msgcount) => {
-//     console.log("POP3 list status:", status, "msgcount:", msgcount);
-//     if (!status) {
-//       console.error("Failed to list emails from POP3 server");
-//       if (!responded) {
-//         responded = true;
-//         res.status(500).json({ message: "Failed to list emails" });
-//       }
-//       client.quit();
-//       clearTimeout(requestTimeout); // Clear timeout on early response
-//       return;
-//     }
-//     categorization.totalFetched = msgcount;
-//     if (msgcount === 0) {
-//       console.log("No new emails on POP3 server.");
-//       if (!responded) {
-//         responded = true;
-//         res.json({ message: "No new emails.", categorization });
-//       }
-//       client.quit();
-//       clearTimeout(requestTimeout);
-//       return;
-//     }
-//     for (let i = 1; i <= msgcount; i++) {
-//       client.retr(i);
-//     }
-//   });
-
-//   client.on("retr", async (status, msgnumber, data) => {
-//     console.log(`POP3 retr status for msg ${msgnumber}:`, status);
-//     if (!status) {
-//       console.warn(`Failed to retrieve email ${msgnumber}`);
-//       emailsProcessed++;
-//       if (emailsProcessed === categorization.totalFetched && !responded) {
-//         responded = true;
-//         res.json({ message: "Email sync complete.", categorization });
-//         clearTimeout(requestTimeout);
-//         client.quit();
-//       }
-//       return;
-//     }
-//     try {
-//       const parsed = await simpleParser(data);
-//       let folderId = 'inbox'; // Default folder
-
-//       const lowerSubject = parsed.subject ? parsed.subject.toLowerCase() : '';
-//       const lowerFrom = parsed.from && parsed.from.text ? parsed.from.text.toLowerCase() : '';
-//       const senderAddress = parsed.from?.value?.[0]?.address?.toLowerCase() || ''; // Get clean sender address
-
-//       // Prioritize categorization based on existing user preferences for the sender.
-//       if (senderAddress && senderPreferencesCache[senderAddress]) {
-//         folderId = senderPreferencesCache[senderAddress];
-//         console.log(`Email from ${senderAddress} auto-categorized to ${folderId} based on user preference.`);
-//       } else {
-//         // Existing categorization logic (only if no sender preference found)
-//         // Categorize emails based on keywords in subject or sender information.
-//         if (lowerSubject.includes('invoice') || lowerFrom.includes('supplier')) {
-//           folderId = 'supplier';
-//         } else if (lowerSubject.includes('competitor') || lowerFrom.includes('rival') || lowerSubject.includes('vs')) {
-//           folderId = 'competitor';
-//         } else if (lowerSubject.includes('info') || lowerSubject.includes('update') || lowerSubject.includes('newsletter')) {
-//           folderId = 'information';
-//         } else if (lowerSubject.includes('customer') || lowerFrom.includes('client')) {
-//           folderId = 'customers';
-//         } else if (lowerSubject.includes('marketing') || lowerSubject.includes('promo') || lowerSubject.includes('discount')) {
-//           folderId = 'marketing';
-//         }
-//       }
-
-//       // Check if the email already exists in the database to prevent duplicates.
-//       const existingEmail = await Email.findOne({ messageId: parsed.messageId });
-//       if (!existingEmail) {
-//         // Create a new email document and save it to the database.
-//         const newEmail = new Email({
-//           subject: parsed.subject,
-//           from: {
-//             name: parsed.from?.value?.[0]?.name || '',
-//             address: parsed.from?.value?.[0]?.address || '',
-//           },
-//           date: parsed.date,
-//           text: parsed.text,
-//           html: parsed.html,
-//           messageId: parsed.messageId,
-//           folderId: folderId,
-//           isRead: false, // Newly fetched emails are unread
-//           isStarred: false,
-//         });
-//         await newEmail.save();
-//         categorization.newEmails++;
-//         categorization.categorized[folderId]++;
-//       }
-//     } catch (parseError) {
-//       console.error(`Error parsing or saving email ${msgnumber}:`, parseError);
-//     } finally {
-//       emailsProcessed++;
-//       // If all fetched emails have been processed, send the response and quit the client.
-//       if (emailsProcessed === categorization.totalFetched && !responded) {
-//         console.log("All POP3 emails processed.");
-//         responded = true;
-//         res.json({ message: "Email sync complete.", categorization });
-//         clearTimeout(requestTimeout);
-//         client.quit();
-//       }
-//     }
-//   });
-
-//   client.on("error", (err) => {
-//     console.error("POP3 client experienced an error:", err);
-//     if (!responded) { // Prevent setting headers twice
-//       responded = true;
-//       res.status(500).json({ message: "POP3 client error", error: err.message });
-//     }
-//     client.quit();
-//     clearTimeout(requestTimeout);
-//   });
-
-//   client.on("quit", () => {
-//     console.log("POP3 client disconnected.");
-//     clearTimeout(requestTimeout);
-//   });
-// // });
-
 const asyncHandler = require('express-async-handler');
 const POP3Client = require('poplib');
 const { simpleParser } = require('mailparser');
@@ -223,8 +13,8 @@ const VALID_FOLDER_IDS = [
 const getEmails = asyncHandler(async (req, res) => {
   const host = process.env.POP3_HOST || 'pop.gmail.com';
   const pop3Port = 995;
-  const username = process.env.POP3_USER || 'newslettertester885@gmail.com';
-  const password = process.env.POP3_PASS || 'your_app_password'; // Use an App Password for Gmail
+  const username = process.env.POP3_USER
+  const password = process.env.POP3_PASS 
 
   const client = new POP3Client(pop3Port, host, {
     tlserrs: false,
@@ -236,12 +26,10 @@ const getEmails = asyncHandler(async (req, res) => {
   let hasResponded = false; // Flag to ensure a response is sent only once
 
   client.on("connect", () => {
-    console.log("POP3 connected");
     client.login(username, password);
   });
 
   client.on("login", async (status) => {
-    console.log("POP3 login status:", status);
     if (status) {
       try {
         const preferences = await SenderPreference.find({});
@@ -249,7 +37,6 @@ const getEmails = asyncHandler(async (req, res) => {
         preferences.forEach(pref => {
           senderPreferencesCache[pref.senderAddress] = pref.folderId;
         });
-        console.log(`Loaded ${preferences.length} sender preferences for categorization.`);
         client.emit('preferences_loaded', senderPreferencesCache);
       } catch (dbError) {
         console.error("Error loading sender preferences:", dbError);
@@ -275,7 +62,6 @@ const getEmails = asyncHandler(async (req, res) => {
   });
 
   client.on("list", (status, msgcount, msgs) => {
-    console.log("POP3 list status:", status, "msgcount:", msgcount);
     if (!status) {
       console.error("Failed to list emails from POP3 server");
       if (!hasResponded) {
@@ -296,12 +82,36 @@ const getEmails = asyncHandler(async (req, res) => {
     }
     
     if (msgcount === 0) {
-      console.log("No new emails on POP3 server.");
       client.quit();
       return;
     }
 
-    const emailsToFetch = Object.keys(msgs);
+    // Enhanced error handling for msgs parameter
+    let emailsToFetch = [];
+    
+    try {
+      if (msgs === null || msgs === undefined) {
+        // If msgs is null/undefined, create array from 1 to msgcount
+        emailsToFetch = Array.from({ length: msgcount }, (_, i) => (i + 1).toString());
+      } else if (Array.isArray(msgs)) {
+        emailsToFetch = msgs.map((_, index) => (index + 1).toString());
+      } else if (typeof msgs === 'object') {
+        emailsToFetch = Object.keys(msgs);
+      } else {
+        // Fallback: create array from 1 to msgcount
+        emailsToFetch = Array.from({ length: msgcount }, (_, i) => (i + 1).toString());
+      }
+      
+    } catch (error) {
+      console.error("Error processing msgs parameter:", error);
+      if (!hasResponded) {
+        hasResponded = true;
+        res.status(500).json({ message: "Error processing email list", error: error.message });
+      }
+      client.quit();
+      return;
+    }
+
     let emailsProcessed = 0;
     const categorization = {
       totalFetched: emailsToFetch.length,
@@ -319,7 +129,6 @@ const getEmails = asyncHandler(async (req, res) => {
     
     const fetchNextEmail = async () => {
       if (emailsToFetch.length === 0) {
-        console.log("All POP3 emails processed.");
         client.quit();
         return;
       }
@@ -329,7 +138,6 @@ const getEmails = asyncHandler(async (req, res) => {
     };
 
     client.on("retr", async (status, msgnumber, data) => {
-      console.log(`POP3 retr status for msg ${msgnumber}:`, status);
       if (!status) {
         console.warn(`Failed to retrieve email ${msgnumber}`);
       } else {
@@ -340,9 +148,11 @@ const getEmails = asyncHandler(async (req, res) => {
           const lowerFrom = parsed.from && parsed.from.text ? parsed.from.text.toLowerCase() : '';
           const senderAddress = parsed.from?.value?.[0]?.address?.toLowerCase() || '';
 
-          if (senderAddress && client.senderPreferencesCache[senderAddress]) {
+          // Check sender preferences first
+          if (senderAddress && client.senderPreferencesCache && client.senderPreferencesCache[senderAddress]) {
             folderId = client.senderPreferencesCache[senderAddress];
           } else {
+            // Content-based categorization
             if (lowerSubject.includes('invoice') || lowerFrom.includes('supplier')) {
               folderId = 'supplier';
             } else if (lowerSubject.includes('competitor') || lowerFrom.includes('rival') || lowerSubject.includes('vs')) {
@@ -356,6 +166,7 @@ const getEmails = asyncHandler(async (req, res) => {
             }
           }
 
+          // Check for duplicates
           const existingEmail = await Email.findOne({ messageId: parsed.messageId });
           if (!existingEmail) {
             const newEmail = new Email({
@@ -382,14 +193,18 @@ const getEmails = asyncHandler(async (req, res) => {
       }
       
       emailsProcessed++;
+      
       if (emailsProcessed === categorization.totalFetched) {
-        console.log(`Background sync finished. Processed ${categorization.totalFetched} emails. New emails saved: ${categorization.newEmails}.`);
         client.quit();
       } else {
-        fetchNextEmail();
+        // Add small delay to prevent overwhelming the server
+        setTimeout(() => {
+          fetchNextEmail();
+        }, 100);
       }
     });
 
+    // Start fetching emails
     fetchNextEmail();
   });
 
@@ -403,13 +218,19 @@ const getEmails = asyncHandler(async (req, res) => {
   });
 
   client.on("quit", () => {
-    console.log("POP3 client disconnected.");
+    // Keep this for monitoring connection lifecycle
   });
-});
 
-// --- Placeholder functions for emailController.js ---
-// YOU NEED TO REPLACE THESE WITH YOUR ACTUAL LOGIC
-// If you already have these defined in another file, you should consolidate them here.
+  // Add timeout protection
+  setTimeout(() => {
+    if (!hasResponded) {
+      console.error("POP3 operation timed out");
+      hasResponded = true;
+      res.status(408).json({ message: "POP3 operation timed out" });
+      client.quit();
+    }
+  }, 30000); // 30 second timeout
+});
 
 const getSavedEmails = asyncHandler(async (req, res) => {
   const { folderId, q } = req.query; // q for search query
@@ -533,9 +354,7 @@ const moveEmailToFolder = asyncHandler(async (req, res) => {
       { $set: { folderId: folderId } }
     );
   } else {
-    // Log a warning for debugging. This means a SenderPreference won't be saved for this email.
-    console.warn(`Skipping SenderPreference for email ID: ${emailId} due to missing or invalid sender address: "${senderAddress}"`);
-    // The email move will still proceed.
+    // The email move will still proceed even without saving sender preference
   }
 
   res.status(200).json({ message: `Email moved to ${folderId} and preference saved.`, email });
@@ -631,7 +450,7 @@ const manualCategorization = asyncHandler(async (req, res) => {
       { $set: { folderId: categoryId } }
     );
   } else {
-    console.warn(`Skipping SenderPreference for email ID: ${id} due to missing or invalid sender address: "${senderAddress}"`);
+    // Continue without saving sender preference
   }
 
   res.status(200).json({ message: 'Email manually categorized successfully.', email });
