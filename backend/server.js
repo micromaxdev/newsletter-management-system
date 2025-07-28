@@ -3,6 +3,7 @@ const dotenv = require("dotenv").config();
 const connectDB = require("./config/db");
 const path = require("path");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 // Import Route Files
 const emailRoutes = require("./routes/emailRoutes");
@@ -21,6 +22,7 @@ SenderPreference.deleteMany({ senderAddress: null })
   .catch((err) => console.error("Cleanup error:", err));
 
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
