@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -12,7 +13,8 @@
     "jsonwebtoken": "^9.0.2",
     "mailparser": "^3.7.4",
     "mongoose": "^8.16.4",
-    "poplib": "^0.1.7"
+    "poplib": "^0.1.7",
+    "react-redux": "^9.2.0"
   },
   "scripts": {
     "server": "node backend/server.js",
