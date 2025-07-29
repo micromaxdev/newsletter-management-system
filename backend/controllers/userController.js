@@ -91,12 +91,19 @@ const sendTokenResponse = (user, statusCode, res) => {
     sameSite: "strict",
   };
 
-  res.status(statusCode).cookie("token", token, options).json({
-    _id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  });
+  res
+    .status(statusCode)
+    .cookie("token", token, options)
+    .json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    });
 };
 
 module.exports = {

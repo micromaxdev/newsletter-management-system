@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-import { register as registerUser } from "../features/auth/authService";
+import { useDispatch, useSelector } from "react-redux";
+import { register } from "../features/auth/authSlice";
 
 export default function Register({ onSuccess }) {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,13 +30,15 @@ export default function Register({ onSuccess }) {
     setIsLoading(true);
     try {
       const name = `${firstName} ${lastName}`.trim();
-      await registerUser({ name, email, password, type });
-      toast.success("Registration successful! Please login.");
-      if (onSuccess) onSuccess();
+      const result = await dispatch(
+        register({ name, email, password, type })
+      ).unwrap();
+      if (result) {
+        toast.success("Registration successful! Please login.");
+        if (onSuccess) onSuccess();
+      }
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || err.message || "Registration failed"
-      );
+      toast.error(err.message || "Registration failed");
     } finally {
       setIsLoading(false);
     }
