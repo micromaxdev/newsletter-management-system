@@ -1,10 +1,20 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-import { login as loginUser } from "../features/auth/authService";
+import { useSelector, useDispatch } from "react-redux";
+import { login } from "../features/auth/authSlice";
 
 export default function Login({ onSuccess }) {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const { user, isError, message } = useSelector((state) => state.auth);
+
+  // Log user ID after successful login
+  React.useEffect(() => {
+    if (user && user._id) {
+      console.log("Logged in user ID:", user._id);
+    }
+  }, [user]);
 
   const { email, password } = formData;
 
@@ -16,11 +26,13 @@ export default function Login({ onSuccess }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await loginUser({ email, password });
-      toast.success("Login successful!");
-      if (onSuccess) onSuccess();
+      const result = await dispatch(login({ email, password })).unwrap();
+      if (result) {
+        toast.success("Login successful!");
+        if (onSuccess) onSuccess();
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || "Login failed");
+      toast.error(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }

@@ -93,8 +93,10 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload.user || action.payload;
+        state.user = action.payload.user;
         state.token = action.payload.token;
+        localStorage.setItem("user", JSON.stringify(state.user));
+        localStorage.setItem("token", state.token);
         localStorage.setItem("user", JSON.stringify(state.user));
         localStorage.setItem("token", state.token);
       })
@@ -112,10 +114,14 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload.user || action.payload;
+        state.user = action.payload.user;
         state.token = action.payload.token;
         localStorage.setItem("user", JSON.stringify(state.user));
         localStorage.setItem("token", state.token);
+        localStorage.setItem("user", JSON.stringify(state.user));
+        localStorage.setItem("token", state.token);
+        console.log("User:", state.user);
+        console.log("Token:", state.token);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;

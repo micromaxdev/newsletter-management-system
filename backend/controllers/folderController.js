@@ -1,25 +1,41 @@
-const asyncHandler = require('express-async-handler');
+const asyncHandler = require("express-async-handler");
+const Folder = require("../models/folderModel");
 
-// Define folder structure - This should ideally come from a database or configuration,
-// but for now, we'll keep it here as it's a static structure.
-const FOLDER_STRUCTURE = [
+// Define default folder structure
+const DEFAULT_FOLDER_STRUCTURE = [
   {
-    _id: 'inbox',
-    name: 'Inbox',
+    _id: "inbox",
+    name: "Inbox",
     children: [
-      { _id: 'supplier', name: 'Supplier', children: [] },
-      { _id: 'competitor', name: 'Competitor', children: [] },
-      { _id: 'information', name: 'Information', children: [] },
-      { _id: 'customers', name: 'Customers', children: [] },
-      { _id: 'marketing', name: 'Marketing', children: [] }
-    ]
+      { _id: "supplier", name: "Supplier", children: [] },
+      { _id: "competitor", name: "Competitor", children: [] },
+      { _id: "information", name: "Information", children: [] },
+      { _id: "customers", name: "Customers", children: [] },
+      { _id: "marketing", name: "Marketing", children: [] },
+    ],
   },
   {
-    _id: 'archive',
-    name: 'Archive',
-    children: []
-  }
+    _id: "archive",
+    name: "Archive",
+    children: [],
+  },
 ];
+
+// Initialize folders in database if they don't exist
+const initializeFolders = async () => {
+  try {
+    // Check if we already have folders in the database
+    const existingFolders = await Folder.find({});
+
+    if (existingFolders.length === 0) {
+      // If no folders exist, create the default structure
+      await Folder.insertMany(DEFAULT_FOLDER_STRUCTURE);
+    }
+  } catch (error) {
+    console.error("Error initializing folders:", error);
+    throw error;
+  }
+};
 
 // Utility function to find a folder by ID recursively
 const findFolderInStructure = (folders, id) => {
@@ -39,9 +55,13 @@ const findFolderInStructure = (folders, id) => {
  * @access Public
  */
 const getAllFolders = asyncHandler(async (req, res) => {
-  // In a real application, this might fetch from a database
-  // For now, it returns the static FOLDER_STRUCTURE
-  res.json(FOLDER_STRUCTURE);
+  // Initialize folders if needed
+  await initializeFolders();
+  console.log("Fetching all folders..."); // Debug log
+
+  // Fetch all folders from database
+  const folders = await Folder.find({});
+  res.json(folders);
 });
 
 /**
@@ -52,12 +72,12 @@ const getAllFolders = asyncHandler(async (req, res) => {
 const getFolderById = asyncHandler(async (req, res) => {
   const { folderId } = req.params;
 
-  const folder = findFolderInStructure(FOLDER_STRUCTURE, folderId);
+  const folder = await Folder.findOne({ _id: folderId });
 
   if (folder) {
     res.json(folder);
   } else {
-    res.status(404).json({ error: 'Folder not found' });
+    res.status(404).json({ error: "Folder not found" });
   }
 });
 
