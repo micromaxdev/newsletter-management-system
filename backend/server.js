@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const emailRoutes = require("./routes/emailRoutes");
 const folderRoutes = require("./routes/folderRoutes");
 const userRoutes = require("./routes/userRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
 
 const app = express();
 connectDB(); // Connect to MongoDB
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api/emails", emailRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
