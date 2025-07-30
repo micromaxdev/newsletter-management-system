@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, X, Trash2, Settings, Mail, Folder, Users } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Modal, Box } from "@mui/material";
+import { Bell, X, Trash2, Mail, Folder, Users } from "lucide-react";
 
 const SubscriptionModal = ({ isOpen, onClose }) => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [newSubscription, setNewSubscription] = useState({
-    type: 'sender',
-    value: '',
-    frequency: 'immediate'
+    type: "sender",
+    value: "",
+    frequency: "immediate",
   });
 
   const folderConfig = [
@@ -21,28 +22,24 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
     { id: "archive", name: "Archive" },
   ];
 
-  // Fetch subscriptions when modal opens
   useEffect(() => {
-    if (isOpen) {
-      fetchSubscriptions();
-    }
+    if (isOpen) fetchSubscriptions();
   }, [isOpen]);
 
   const fetchSubscriptions = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/subscriptions', {
-        credentials: 'include'
+      const response = await fetch("/api/subscriptions", {
+        credentials: "include",
       });
-      
       if (response.ok) {
         const data = await response.json();
         setSubscriptions(data.subscriptions || []);
       } else {
-        setError('Failed to fetch subscriptions');
+        setError("Failed to fetch subscriptions");
       }
     } catch (err) {
-      setError('Network error while fetching subscriptions');
+      setError("Network error while fetching subscriptions");
     } finally {
       setLoading(false);
     }
@@ -50,97 +47,94 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
   const addSubscription = async () => {
     if (!newSubscription.value.trim()) {
-      setError('Please enter a value for the subscription');
+      setError("Please enter a value for the subscription");
       return;
     }
-
     try {
-      const response = await fetch('/api/subscriptions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(newSubscription)
+      const response = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(newSubscription),
       });
-      
       if (response.ok) {
-        setNewSubscription({ type: 'sender', value: '', frequency: 'immediate' });
-        setError('');
-        fetchSubscriptions(); // Refresh the list
+        setNewSubscription({
+          type: "sender",
+          value: "",
+          frequency: "immediate",
+        });
+        setError("");
+        fetchSubscriptions();
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to add subscription');
+        setError(errorData.error || "Failed to add subscription");
       }
     } catch (err) {
-      setError('Network error while adding subscription');
+      setError("Network error while adding subscription");
     }
   };
 
-  const removeSubscription = async (subscriptionId) => {
+  const removeSubscription = async (id) => {
     try {
-      const response = await fetch(`/api/subscriptions/${subscriptionId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const response = await fetch(`/api/subscriptions/${id}`, {
+        method: "DELETE",
+        credentials: "include",
       });
-      
       if (response.ok) {
-        fetchSubscriptions(); // Refresh the list
-        setError('');
+        fetchSubscriptions();
+        setError("");
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to remove subscription');
+        setError(errorData.error || "Failed to remove subscription");
       }
     } catch (err) {
-      setError('Network error while removing subscription');
+      setError("Network error while removing subscription");
     }
   };
 
-  const updateSubscriptionFrequency = async (subscriptionId, newFrequency) => {
+  const updateSubscriptionFrequency = async (id, frequency) => {
     try {
-      const response = await fetch(`/api/subscriptions/${subscriptionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ frequency: newFrequency })
+      const response = await fetch(`/api/subscriptions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ frequency }),
       });
-      
       if (response.ok) {
-        fetchSubscriptions(); // Refresh the list
-        setError('');
+        fetchSubscriptions();
+        setError("");
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to update subscription');
+        setError(errorData.error || "Failed to update subscription");
       }
     } catch (err) {
-      setError('Network error while updating subscription');
+      setError("Network error while updating subscription");
     }
   };
 
-  const getDisplayName = (subscription) => {
-    if (subscription.type === 'folder') {
-      const folder = folderConfig.find(f => f.id === subscription.value);
-      return folder ? folder.name : subscription.value;
-    }
-    return subscription.value;
-  };
+  const getDisplayName = (subscription) =>
+    subscription.type === "folder"
+      ? folderConfig.find((f) => f.id === subscription.value)?.name ||
+        subscription.value
+      : subscription.value;
 
-  const getIcon = (subscription) => {
-    if (subscription.type === 'folder') {
-      return <Folder size={16} className="text-amber-600" />;
-    }
-    return <Mail size={16} className="text-blue-600" />;
-  };
-
-  if (!isOpen) return null;
+  const getIcon = (subscription) =>
+    subscription.type === "folder" ? (
+      <Folder size={16} className="text-amber-600" />
+    ) : (
+      <Mail size={16} className="text-blue-600" />
+    );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4">
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      aria-labelledby="subscription-modal"
+      disableAutoFocus
+    >
+      <Box className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b bg-white">
           <div className="flex items-center">
             <Bell className="text-indigo-600 mr-3" size={24} />
             <h2 className="text-xl font-semibold text-gray-900">
@@ -149,15 +143,14 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colours"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {/* Error Message */}
+        <div className="p-6 bg-white">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
               {error}
@@ -166,7 +159,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
           {/* Add New Subscription */}
           <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Subscription</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Add New Subscription
+            </h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -175,7 +170,13 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                   </label>
                   <select
                     value={newSubscription.type}
-                    onChange={(e) => setNewSubscription({ ...newSubscription, type: e.target.value, value: '' })}
+                    onChange={(e) =>
+                      setNewSubscription({
+                        ...newSubscription,
+                        type: e.target.value,
+                        value: "",
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="sender">Email Sender</option>
@@ -185,13 +186,20 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {newSubscription.type === 'sender' ? 'Email Address' : 'Folder'}
+                    {newSubscription.type === "sender"
+                      ? "Email Address"
+                      : "Folder"}
                   </label>
-                  {newSubscription.type === 'sender' ? (
+                  {newSubscription.type === "sender" ? (
                     <input
                       type="email"
                       value={newSubscription.value}
-                      onChange={(e) => setNewSubscription({ ...newSubscription, value: e.target.value })}
+                      onChange={(e) =>
+                        setNewSubscription({
+                          ...newSubscription,
+                          value: e.target.value,
+                        })
+                      }
                       placeholder="Enter email address"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       required
@@ -199,12 +207,17 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                   ) : (
                     <select
                       value={newSubscription.value}
-                      onChange={(e) => setNewSubscription({ ...newSubscription, value: e.target.value })}
+                      onChange={(e) =>
+                        setNewSubscription({
+                          ...newSubscription,
+                          value: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       required
                     >
                       <option value="">Select folder</option>
-                      {folderConfig.map(folder => (
+                      {folderConfig.map((folder) => (
                         <option key={folder.id} value={folder.id}>
                           {folder.name}
                         </option>
@@ -219,7 +232,12 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                   </label>
                   <select
                     value={newSubscription.frequency}
-                    onChange={(e) => setNewSubscription({ ...newSubscription, frequency: e.target.value })}
+                    onChange={(e) =>
+                      setNewSubscription({
+                        ...newSubscription,
+                        frequency: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="immediate">Immediate</option>
@@ -242,8 +260,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
           {/* Current Subscriptions */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Current Subscriptions</h3>
-            
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Current Subscriptions
+            </h3>
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
@@ -253,7 +272,9 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
               <div className="text-center py-8">
                 <Users className="mx-auto h-12 w-12 text-gray-400" />
                 <p className="text-gray-500 mt-2">No subscriptions yet</p>
-                <p className="text-gray-400 text-sm">Add your first subscription above</p>
+                <p className="text-gray-400 text-sm">
+                  Add your first subscription above
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -269,8 +290,10 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                           {getDisplayName(subscription)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {subscription.type === 'sender' ? 'Email sender' : 'Folder'} •{' '}
-                          {subscription.frequency} notifications
+                          {subscription.type === "sender"
+                            ? "Email sender"
+                            : "Folder"}{" "}
+                          • {subscription.frequency} notifications
                         </p>
                       </div>
                     </div>
@@ -278,14 +301,19 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                     <div className="flex items-center space-x-2">
                       <select
                         value={subscription.frequency}
-                        onChange={(e) => updateSubscriptionFrequency(subscription._id, e.target.value)}
+                        onChange={(e) =>
+                          updateSubscriptionFrequency(
+                            subscription._id,
+                            e.target.value
+                          )
+                        }
                         className="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       >
                         <option value="immediate">Immediate</option>
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
                       </select>
-                      
+
                       <button
                         onClick={() => removeSubscription(subscription._id)}
                         className="text-red-500 hover:text-red-700 transition-colors p-1"
@@ -302,16 +330,16 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
+        <div className="px-6 py-4 border-t bg-white flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colours"
           >
             Close
           </button>
         </div>
-      </div>
-    </div>
+      </Box>
+    </Modal>
   );
 };
 
