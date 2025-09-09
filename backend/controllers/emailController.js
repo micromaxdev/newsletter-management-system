@@ -3,7 +3,9 @@ const POP3Client = require('poplib');
 const { simpleParser } = require('mailparser');
 const Email = require('../models/emailModel');
 const SenderPreference = require('../models/senderPreferenceModel');
+const EmailCategorizationService = require('../services/emailCategorizationService');
 
+const emailCategorizationService = new EmailCategorizationService();
 // Define valid folder IDs
 const VALID_FOLDER_IDS = [
   'inbox', 'supplier', 'competitor', 'information',
@@ -144,28 +146,9 @@ const getEmails = asyncHandler(async (req, res) => {
         try {
           const parsed = await simpleParser(data);
           let folderId = 'inbox';
-          const lowerSubject = parsed.subject ? parsed.subject.toLowerCase() : '';
-          const lowerFrom = parsed.from && parsed.from.text ? parsed.from.text.toLowerCase() : '';
-          const senderAddress = parsed.from?.value?.[0]?.address?.toLowerCase() || '';
-
-          // Check sender preferences first
-          if (senderAddress && client.senderPreferencesCache && client.senderPreferencesCache[senderAddress]) {
-            folderId = client.senderPreferencesCache[senderAddress];
-          } else {
-            // Content-based categorization
-            if (lowerSubject.includes('invoice') || lowerFrom.includes('supplier')) {
-              folderId = 'supplier';
-            } else if (lowerSubject.includes('competitor') || lowerFrom.includes('rival') || lowerSubject.includes('vs')) {
-              folderId = 'competitor';
-            } else if (lowerSubject.includes('info') || lowerSubject.includes('update') || lowerSubject.includes('newsletter')) {
-              folderId = 'information';
-            } else if (lowerSubject.includes('customer') || lowerFrom.includes('client')) {
-              folderId = 'customers';
-            } else if (lowerSubject.includes('marketing') || lowerSubject.includes('promo') || lowerSubject.includes('discount')) {
-              folderId = 'marketing';
-            }
-          }
-
+          
+          // Use the categorization service for better accuracy
+          folderId = emailCategorizationService.categorizeEmail(parsed, client.senderPreferencesCache);
           // Check for duplicates
           const existingEmail = await Email.findOne({ messageId: parsed.messageId });
           if (!existingEmail) {
@@ -361,21 +344,45 @@ const moveEmailToFolder = asyncHandler(async (req, res) => {
 });
 
 
+// const recategorizeEmails = asyncHandler(async (req, res) => {
+//   const preferences = await SenderPreference.find({});
+//   let reCategorizedCount = 0;
+
+//   for (const pref of preferences) {
+//     const result = await Email.updateMany(
+//       { 'from.address': pref.senderAddress, folderId: { $ne: pref.folderId } },
+//       { $set: { folderId: pref.folderId } }
+//     );
+//     reCategorizedCount += result.modifiedCount;
+//   }
+
+//   res.status(200).json({
+//     message: `Recategorization complete. ${reCategorizedCount} emails updated based on sender preferences.`,
+//     details: 'More advanced recategorization logic can be added here.'
+//   });
+// });
+
 const recategorizeEmails = asyncHandler(async (req, res) => {
+  const emails = await Email.find({});
   const preferences = await SenderPreference.find({});
+  const senderPreferencesCache = {};
+  preferences.forEach(pref => {
+    senderPreferencesCache[pref.senderAddress] = pref.folderId;
+  });
+
   let reCategorizedCount = 0;
 
-  for (const pref of preferences) {
-    const result = await Email.updateMany(
-      { 'from.address': pref.senderAddress, folderId: { $ne: pref.folderId } },
-      { $set: { folderId: pref.folderId } }
-    );
-    reCategorizedCount += result.modifiedCount;
+  for (const email of emails) {
+    const newFolderId = emailCategorizationService.categorizeEmail(email, senderPreferencesCache);
+    if (email.folderId !== newFolderId) {
+      email.folderId = newFolderId;
+      await email.save();
+      reCategorizedCount++;
+    }
   }
 
   res.status(200).json({
-    message: `Recategorization complete. ${reCategorizedCount} emails updated based on sender preferences.`,
-    details: 'More advanced recategorization logic can be added here.'
+    message: `Recategorization complete. ${reCategorizedCount} emails updated based on the latest categorization rules.`,
   });
 });
 

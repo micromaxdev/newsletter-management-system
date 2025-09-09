@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const path = require('path');
 
@@ -54,13 +53,13 @@ class EmailCategorizationService {
         senderKeywords: [
           'newsletter', 'news', 'updates', 'digest', 'bulletin',
           'report', 'insights', 'weekly', 'monthly', 'daily',
-          'blog', 'publication', 'magazine', 'journal'
+          'blog', 'publication', 'magazine', 'journal', 'superhuman'
         ],
         subjectKeywords: [
           'newsletter', 'news', 'update', 'announcement', 'digest',
           'bulletin', 'report', 'insights', 'weekly', 'monthly',
           'industry news', 'press release', 'blog', 'article',
-          'trending', 'breaking news', 'latest news', 'news alert'
+          'trending', 'breaking news', 'latest news', 'news alert', 'ai'
         ],
         domainPatterns: [
           /.*news.*/, /.*newsletter.*/, /.*media.*/, /.*press.*/,
@@ -133,62 +132,25 @@ class EmailCategorizationService {
     // Minimum score threshold for categorization
     this.minCategoryScore = 15;
 
-    // Initialize sender to folder mapping
-    this.senderFolderMap = {};
-
-    // Load existing mappings from file if available
-    this.loadMappings();
+    // The sender-to-folder mapping will be passed in from the controller.
   }
 
-  // Path to store the sender-to-folder mappings
-  getMappingsFilePath() {
-    return path.join(__dirname, 'senderFolderMap.json');
-  }
-
-  // Load mappings from file
-  loadMappings() {
-    const filePath = this.getMappingsFilePath();
-    if (fs.existsSync(filePath)) {
-      try {
-        const data = fs.readFileSync(filePath, 'utf-8');
-        this.senderFolderMap = JSON.parse(data);
-        console.log('📥 Loaded sender-folder mappings');
-      } catch (err) {
-        console.error('❌ Error loading sender-folder mappings:', err);
-      }
-    }
-  }
-
-  // Save mappings to file
-  saveMappings() {
-    const filePath = this.getMappingsFilePath();
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(this.senderFolderMap));
-      // console.log('📤 Saved sender-folder mappings');
-    } catch (err) {
-      console.error('❌ Error saving sender-folder mappings:', err);
-    }
-  }
-
-  // Update mapping after manual move
-  updateMapping(senderAddress, folderId) {
-    this.senderFolderMap[senderAddress] = folderId;
-    this.saveMappings();
-  }
+  // The sender-to-folder mapping is now managed by the controller and the database.
 
   /**
    * Categorize email based on sender, subject, and content with scoring
    * @param {Object} emailData - Email object with from, subject, text, html
+   * @param {Object} senderPreferences - A map of sender addresses to folder IDs
    * @returns {string} - Category folder ID
    */
-  categorizeEmail(emailData) {
+  categorizeEmail(emailData, senderPreferences = {}) {
     const sender = this.extractSenderInfo(emailData);
     const senderAddress = sender.email;
 
-    // Check if sender exists in the map
-    if (senderAddress && this.senderFolderMap[senderAddress]) {
-      // Return the mapped folder directly
-      return this.senderFolderMap[senderAddress];
+    // Check if sender exists in the preferences
+    if (senderAddress && senderPreferences[senderAddress]) {
+      // Return the preferred folder directly
+      return senderPreferences[senderAddress];
     }
 
     const subject = (emailData.subject || '').toLowerCase();
@@ -211,7 +173,7 @@ class EmailCategorizationService {
     }
 
     console.log(`📁 Email categorization:`, {
-      subject: emailData.subject?.substring(0, 50) + '...',
+      subject: emailData.subject?.substring(0, 50) + '...', 
       from: sender.email,
       scores: categoryScores,
       assigned: bestCategory,
@@ -344,7 +306,7 @@ class EmailCategorizationService {
    * @param {Array} emails
    * @returns {Object}
    */
-  bulkCategorize(emails) {
+  bulkCategorize(emails, senderPreferences = {}) {
     const results = {
       total: emails.length,
       categorized: 0,
@@ -357,7 +319,7 @@ class EmailCategorizationService {
     let totalConfidence = 0;
 
     for (const email of emails) {
-      const category = this.categorizeEmail(email);
+      const category = this.categorizeEmail(email, senderPreferences);
       const sender = this.extractSenderInfo(email);
       const confidence = this.calculateCategoryScore(
         category,
@@ -458,11 +420,8 @@ class EmailCategorizationService {
     const sender = this.extractSenderInfo(emailData);
     const senderAddress = sender.email;
 
-    // Save sender-to-folder mapping
-    if (senderAddress && correctCategory) {
-      this.updateMapping(senderAddress, correctCategory);
-      console.log(`Learned sender ${senderAddress} => ${correctCategory}`);
-    }
+    // The controller now handles saving the sender preference to the database.
+    // This function can be extended to improve the keyword-based rules in the future.
 
     // Existing rule improvements...
     this.improveRulesFromCorrection(emailData, correctCategory, sender);
