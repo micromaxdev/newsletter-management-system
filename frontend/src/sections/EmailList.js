@@ -89,7 +89,7 @@ export default function EmailList({
       <div style={{ 
         transition: "opacity 0.2s ease-in-out", 
         opacity: 1,
-        padding: "0 0 2rem 0",
+        padding: "0 0 4rem 0",
         minHeight: "400px"
       }}>
         {emails.map((email, i) => (

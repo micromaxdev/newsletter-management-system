@@ -343,25 +343,6 @@ const moveEmailToFolder = asyncHandler(async (req, res) => {
   res.status(200).json({ message: `Email moved to ${folderId} and preference saved.`, email });
 });
 
-
-// const recategorizeEmails = asyncHandler(async (req, res) => {
-//   const preferences = await SenderPreference.find({});
-//   let reCategorizedCount = 0;
-
-//   for (const pref of preferences) {
-//     const result = await Email.updateMany(
-//       { 'from.address': pref.senderAddress, folderId: { $ne: pref.folderId } },
-//       { $set: { folderId: pref.folderId } }
-//     );
-//     reCategorizedCount += result.modifiedCount;
-//   }
-
-//   res.status(200).json({
-//     message: `Recategorization complete. ${reCategorizedCount} emails updated based on sender preferences.`,
-//     details: 'More advanced recategorization logic can be added here.'
-//   });
-// });
-
 const recategorizeEmails = asyncHandler(async (req, res) => {
   const emails = await Email.find({});
   const preferences = await SenderPreference.find({});

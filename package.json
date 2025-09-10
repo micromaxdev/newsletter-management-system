@@ -12,6 +12,7 @@
     "jsonwebtoken": "^9.0.2",
     "mailparser": "^3.7.4",
     "mongoose": "^8.16.4",
+    "node-cron": "^4.2.1",
     "poplib": "^0.1.7"
   },
   "scripts": {
