@@ -6,7 +6,7 @@ function EmailList() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5007/api/emails") 
+    fetch(`${process.env.REACT_APP_API_URL}/api/emails`) 
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch emails");
         return res.json();

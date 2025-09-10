@@ -4,7 +4,7 @@ function FolderList() {
   const [folders, setFolders] = useState([]);
 
   useEffect(() => {
-    fetch("/api/folders")
+    fetch(`${process.env.REACT_APP_API_URL}/api/folders`)
       .then(res => res.json())
       .then(data => setFolders(data));
   }, []);

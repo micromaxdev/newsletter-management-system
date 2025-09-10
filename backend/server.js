@@ -20,7 +20,12 @@ SenderPreference.deleteMany({ senderAddress: null })
   )
   .catch((err) => console.error("Cleanup error:", err));
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()),
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

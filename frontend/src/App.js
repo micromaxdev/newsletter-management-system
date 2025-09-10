@@ -651,6 +651,8 @@ const EmailModal = ({
   );
 };
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 function App() {
   const [allEmails, setAllEmails] = useState([]);
   const [displayedEmails, setDisplayedEmails] = useState([]);
@@ -684,7 +686,7 @@ function App() {
     // Try to check if user is authenticated (by calling a protected endpoint)
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/users/me", { credentials: "include" });
+        const res = await fetch(`${API_URL}/api/users/me`, { credentials: "include" });
         if (res.ok) {
           setIsAuthenticated(true);
         } else {
@@ -717,7 +719,7 @@ function App() {
   // Handler for logout
   const handleLogout = async () => {
     try {
-      await fetch("/api/users/logout", {
+      await fetch(`${API_URL}/api/users/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -792,7 +794,7 @@ function App() {
         params.append("q", searchQuery.trim());
       }
 
-      const response = await fetch(`/api/emails/saved?${params.toString()}`);
+      const response = await fetch(`${API_URL}/api/emails/saved?${params.toString()}`);
       const data = await response.json();
 
       if (data.emails) {
@@ -814,7 +816,7 @@ function App() {
 
   const fetchCounts = async () => {
     try {
-      const response = await fetch("/api/emails/counts");
+      const response = await fetch(`${API_URL}/api/emails/counts`);
       const data = await response.json();
 
       if (data.counts && data.unreadCounts) {
@@ -835,7 +837,7 @@ function App() {
     setError("");
     try {
       console.log("Starting email sync...");
-      const response = await fetch("/api/emails");
+      const response = await fetch(`${API_URL}/api/emails`);
       const data = await response.json();
 
       if (response.ok) {
@@ -861,7 +863,7 @@ function App() {
 
   const markEmailAsRead = async (emailId) => {
     try {
-      const response = await fetch(`/api/emails/${emailId}/read`, {
+      const response = await fetch(`${API_URL}/api/emails/${emailId}/read`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -896,7 +898,7 @@ function App() {
 
   const moveEmail = async (emailId, newFolderId) => {
     try {
-      const response = await fetch(`/api/emails/${emailId}/folder`, {
+      const response = await fetch(`${API_URL}/api/emails/${emailId}/folder`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
