@@ -25,10 +25,6 @@ import Register from "./components/Register";
 import Logout from "./components/Logout";
 import DOMPurify from "dompurify";
 
-//import DOMPurify from 'dompurify';
-
-//<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.html) }} />
-
 //Admin Dashboard
 const AdminDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -794,7 +790,7 @@ function App() {
         params.append("q", searchQuery.trim());
       }
 
-      const response = await fetch(`${API_URL}/api/emails/saved?${params.toString()}`);
+      const response = await fetch(`${API_URL}/api/emails/saved?${params.toString()}`, { credentials: "include" });
       const data = await response.json();
 
       if (data.emails) {
@@ -816,7 +812,7 @@ function App() {
 
   const fetchCounts = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/emails/counts`);
+      const response = await fetch(`${API_URL}/api/emails/counts`, { credentials: "include" });
       const data = await response.json();
 
       if (data.counts && data.unreadCounts) {
@@ -837,7 +833,7 @@ function App() {
     setError("");
     try {
       console.log("Starting email sync...");
-      const response = await fetch(`${API_URL}/api/emails`);
+      const response = await fetch(`${API_URL}/api/emails`, { credentials: "include" });
       const data = await response.json();
 
       if (response.ok) {
@@ -868,6 +864,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include"
       });
 
       if (response.ok) {
@@ -904,6 +901,7 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ folderId: newFolderId }),
+        credentials: "include"
       });
 
       if (response.ok) {

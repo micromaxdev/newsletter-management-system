@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler'); // Keep asyncHandler for consistency
 
+const { protect } = require('../middleware/authMiddleware');
+
 // Import all functions from the new emailController
 const {
   getEmails,
@@ -19,6 +21,9 @@ const {
   getEmailStatistics,
   validateCategorization,
 } = require('../controllers/emailController');
+
+// Protect all routes in this file
+router.use(protect);
 
 // --- Email API Routes ---
 

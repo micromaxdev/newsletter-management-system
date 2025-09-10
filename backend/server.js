@@ -3,6 +3,7 @@ const dotenv = require("dotenv").config();
 const connectDB = require("./config/db");
 const path = require("path");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 // Import Route Files
 const emailRoutes = require("./routes/emailRoutes");
@@ -22,10 +23,11 @@ SenderPreference.deleteMany({ senderAddress: null })
 
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()),
-    credentials: true,
+    origin: "http://localhost:3000", // Allow multiple origins
+    credentials: true, // Allow cookies and authorization headers
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
