@@ -6,7 +6,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 // Schedule tasks to be run on the server.
 const cron = require("node-cron");
+// Schedule to run once a day at midnight.
 const { deleteOldEmails } = require("./services/cleanUpService");
+const { syncEmailsFromPOP3 } = require("./services/emailSyncService");
 // Import Route Files
 const emailRoutes = require("./routes/emailRoutes");
 const folderRoutes = require("./routes/folderRoutes");
@@ -53,10 +55,20 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const PORT = process.env.PORT || 5007;
-// Schedule to run once a day at midnight.
+
+
+// Schedule email cleanup to run once a day at midnight.
 cron.schedule('0 0 * * *', () => {
     console.log('[CRON JOB] Running daily email cleanup...');
     deleteOldEmails();
+});
+
+// Schedule email sync to run every 10 minutes.
+cron.schedule('*/10 * * * *', () => {
+    console.log('[CRON JOB] Running scheduled email sync...');
+    syncEmailsFromPOP3().catch(error => {
+        console.error('[CRON JOB] Error during scheduled email sync:', error);
+    });
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
