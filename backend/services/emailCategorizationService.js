@@ -152,11 +152,12 @@ class EmailCategorizationService {
       // Return the preferred folder directly
       return senderPreferences[senderAddress];
     }
-
+    // Extract subject and content
     const subject = (emailData.subject || '').toLowerCase();
     const content = this.extractContent(emailData);
     const categoryScores = {};
 
+    // Calculate scores for each category
     for (const categoryId of this.categoryPriority) {
       categoryScores[categoryId] = this.calculateCategoryScore(
         categoryId, sender, subject, content

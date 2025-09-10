@@ -1,69 +1,95 @@
-# newsletter-management-system
+# Newsletter Management System
 
-## Project Overview
+## 1. Project Overview
 
-This is a MERN stack application for managing newsletters. The backend is built with Node.js, Express, and MongoDB, while the frontend uses React.
+This is a full-stack MERN application designed to automatically fetch, categorize, and manage newsletters and other emails from a POP3 email server. The backend is built with Node.js, Express, and MongoDB, and it exposes a RESTful API to be consumed by the React frontend.
 
-## Project Setup Instructions
+### Key Features:
+- **Email Fetching**: Automatically connects to a POP3 server to download new emails.
+- **Smart Categorization**: A service that categorizes emails into predefined folders (`inbox`, `supplier`, `competitor`, `information`, `customers`, `marketing`, `archive`) based on sender, subject, and content analysis.
+- **Learning from User Actions**: When a user manually moves an email to a different folder, the system saves this as a `SenderPreference`, ensuring future emails from the same sender are categorized correctly.
+- **RESTful API**: A comprehensive set of endpoints to manage emails, folders, and users.
+- **User Authentication**: JWT-based authentication for user registration and login.
 
-1. **Clone the repository**
-2. **Install root dependencies:**
-   ```bash
-   yarn install
-   ```
-3. **Install frontend dependencies:**
-   ```bash
-   cd frontend
-   yarn install
-   ```
-4. **Create a `.env` file** in the root or backend directory and add your environment variables. For example:
-   ```env
-   MONGO_URI=mongodb://localhost:27017/newsletterdb
-   PORT=5000
-   NODE_ENV=development
-   ```
-5. **Start the development server:**
-   ```bash
-   # From the root directory
-   yarn dev
-   ```
-   This will start both the backend (with nodemon for automatic reloads on file changes) and the frontend concurrently.
+## 2. Tech Stack
 
-## Backend Folder Structure Guidelines (For Students)
+- **Backend**: Node.js, Express.js, MongoDB (with Mongoose)
+- **Frontend**: React.js
+- **Email Handling**: `poplib`, `mailparser`
+- **Authentication**: JSON Web Tokens (JWT)
 
-To keep the backend organized and maintainable, please follow these folder structure rules:
+## 3. Setup and Installation
 
-- **Controllers:** Place all controller files in the `controllers` folder. Controllers should contain the logic for handling requests and responses for each route. Example: see `controllers/userController.js`.
-- **Routes:** Place all route files in the `routes` folder. Routes should define the API endpoints and connect them to the appropriate controller functions. Example: see `routes/userRoutes.js`.
-- **Models:** Place all Mongoose model files in the `models` folder. Models should define the schema and structure for your MongoDB collections. Example: see `models/userModel.js`.
+1.  **Clone the repository**.
+2.  **Install Dependencies**:
+    ```bash
+    # Install root, backend, and frontend dependencies
+    yarn install
+    cd frontend
+    yarn install
+    cd ..
+    ```
+3.  **Configure Environment Variables**:
+    Create a `.env` file in the root directory and populate it based on the `.envexample` file.
 
-**Formatting Tips:**
+    ```env
+    NODE_ENV=development
+    PORT=5007
+    MONGO_URI=mongodb://localhost:27017/micromax
+    JWT_SECRET=your_jwt_secret
+    POP3_USER=your-email@example.com
+    POP3_PASS=your-email-password
+    POP3_HOST=pop.example.com
+    ```
 
-- Each controller should export functions for handling specific endpoints (e.g., register, login, etc.).
-- Each route file should use Express Router and import the relevant controller(s).
-- Each model should use Mongoose's `Schema` and `model` to define and export the schema.
+4.  **Start the Application**:
+    ```bash
+    # From the root directory
+    yarn dev
+    ```
+    This command concurrently starts the backend server (on port 5007) and the frontend development server (on port 3000).
 
-**Sample Files:**
+## 4. Backend Folder Structure
 
-- The provided files in `controllers`, `routes`, and `models` are examples of how to format your code. You may delete or replace them as you build your own features.
+The backend code is organized to separate concerns, making it modular and maintainable.
 
-**Summary:**
+-   `config/`: Contains configuration files, such as the database connection setup (`db.js`).
+-   `controllers/`: Holds the core application logic for handling API requests. Each controller corresponds to a specific resource (e.g., `emailController.js`).
+-   `models/`: Defines the Mongoose schemas for the MongoDB collections (e.g., `emailModel.js`, `userModel.js`).
+-   `routes/`: Contains the Express route definitions, which map API endpoints to their corresponding controller functions.
+-   `services/`: Includes standalone modules that provide specific business logic, like the `emailCategorizationService.js`.
+-   `server.js`: The main entry point for the backend application. It sets up the Express server, connects to the database, and mounts the API routes.
 
-- Keep controllers in `controllers/`
-- Keep routes in `routes/`
-- Keep Mongoose models in `models/`
-- Follow the provided examples for structure and formatting
+## 5. API Endpoints
 
-## Development Notes
+The following are the primary API routes available in the application.
 
-- The backend uses **nodemon**, so any changes you make to backend files will automatically restart the server.
-- The frontend uses **Create React App** and supports hot reloading for React components.
-- By default, the backend runs on [http://localhost:5000](http://localhost:5000) and the frontend runs on [http://localhost:3000](http://localhost:3000).
-- To view the app, open your browser and go to [http://localhost:3000](http://localhost:3000).
-- API endpoints are available under `/api` (e.g., `http://localhost:5000/api/users`).
+### User API (`/api/users`)
 
-## Additional Tips
+| Method | Endpoint         | Description                  |
+| :----- | :--------------- | :--------------------------- |
+| `POST` | `/register`      | Registers a new user.        |
+| `POST` | `/login`         | Authenticates a user and returns a JWT. |
+| `POST` | `/logout`        | Logs out a user (client-side token deletion). |
 
-- If you change backend code, just save the file and nodemon will automatically restart the server.
-- If you change frontend code, the browser will automatically refresh to show your changes.
-- Make sure MongoDB is running locally or update your `MONGO_URI` to point to your MongoDB Atlas or other instance.
+### Email API (`/api/emails`)
+
+| Method | Endpoint                   | Description                                                                                             |
+| :----- | :------------------------- | :------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/`                        | Triggers the process to fetch new emails from the POP3 server.                                          |
+| `GET`  | `/saved`                   | Retrieves emails already saved in the database. Supports filtering by folder and search query (`?q=`).  |
+| `GET`  | `/folders/:folderId`       | Retrieves emails for a specific folder with pagination. Supports search query (`?q=`).                  |
+| `GET`  | `/counts`                  | Gets the total and unread email counts for each folder.                                                 |
+| `GET`  | `/statistics`              | Retrieves aggregated statistics, such as total emails, unread counts, and top senders.                  |
+| `PUT`  | `/:emailId/read`           | Marks a single email as read.                                                                           |
+| `PATCH`| `/:emailId/unread`         | Marks a single email as unread.                                                                         |
+| `PATCH`| `/bulk-read`               | Marks multiple emails as read in a single request.                                                      |
+| `PUT`  | `/:emailId/folder`         | Moves an email to a new folder and creates/updates a `SenderPreference` to "learn" the user's choice.   |
+| `POST` | `/recategorize`            | Re-runs the categorization logic on all existing emails based on the latest rules and sender preferences. |
+
+### Folder API (`/api/folders`)
+
+| Method | Endpoint       | Description                               |
+| :----- | :------------- | :---------------------------------------- |
+| `GET`  | `/`            | Retrieves the static folder structure.    |
+| `GET`  | `/:folderId`   | Retrieves details for a specific folder.  |
