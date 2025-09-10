@@ -23,7 +23,7 @@ SenderPreference.deleteMany({ senderAddress: null })
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow multiple origins
+    origin: process.env.ALLOWED_ORIGINS.split(","),
     credentials: true, // Allow cookies and authorization headers
   })
 );
