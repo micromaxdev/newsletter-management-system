@@ -6,6 +6,7 @@ import {
   Calendar,
   Folder,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 
 export default function EmailList({
@@ -24,6 +25,43 @@ export default function EmailList({
     return from.name && from.address
       ? `${from.name} <${from.address}>`
       : from.address || "Unknown";
+  };
+
+  const getTagColor = (tag) => {
+    return "#64748b"; // default gray
+  };
+
+  const renderTags = (tags) => {
+    if (!tags || tags.length === 0) return null;
+    
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        marginTop: "8px",
+        flexWrap: "wrap"
+      }}>
+        <Tag size={14} style={{ color: "#64748b", flexShrink: 0 }} />
+        {tags.map((tag, index) => (
+          <span
+            key={index}
+            style={{
+              backgroundColor: getTagColor(tag),
+              color: "white",
+              fontSize: "11px",
+              fontWeight: "500",
+              padding: "2px 8px",
+              borderRadius: "12px",
+              textTransform: "capitalize",
+              display: "inline-block",
+            }}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -230,6 +268,7 @@ export default function EmailList({
                       "Unknown"}
                   </p>
                 </div>
+                {renderTags(email.tags)}
               </div>
               <ChevronRight
                 size={16}

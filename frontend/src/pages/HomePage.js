@@ -248,6 +248,45 @@ export default function HomePage({ handleLogout }) {
     }
   };
 
+  const updateTags = async (emailId, tags) => {
+    try {
+      const response = await fetch(`${API_URL}/api/emails/tag/${emailId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tags }),
+        credentials: "include"
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update the email in both allEmails and displayedEmails
+        setAllEmails((prevEmails) =>
+          prevEmails.map((email) =>
+            email._id === emailId ? { ...email, tags: data.email.tags } : email
+          )
+        );
+        setDisplayedEmails((prevEmails) =>
+          prevEmails.map((email) =>
+            email._id === emailId ? { ...email, tags: data.email.tags } : email
+          )
+        );
+        setSelectedEmailForModal((prev) =>
+          prev && prev._id === emailId ? { ...prev, tags: data.email.tags } : prev
+        );
+      } else {
+        const errorData = await response.json();
+        setError(
+          `Failed to update tags: ${errorData.message || response.statusText}`
+        );
+      }
+    } catch (error) {
+      console.error("Error updating tags:", error);
+      setError("Failed to update tags due to network error.");
+    }
+  };
+
   const getCurrentFolderName = () => {
     if (selectedFolder === "all") return "All Emails";
     return (
@@ -521,6 +560,7 @@ export default function HomePage({ handleLogout }) {
           displayedEmails={displayedEmails}
           onSelectEmail={setSelectedEmailForModal}
           onMarkAsRead={markEmailAsRead}
+          onUpdateTags={updateTags}
         />
       )}
 

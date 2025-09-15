@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   User,
   Calendar,
@@ -6,6 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Tag,
+  Plus,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 
@@ -17,8 +19,45 @@ export default function EmailModal({
   displayedEmails,
   onSelectEmail,
   onMarkAsRead,
+  onUpdateTags,
 }) {
+  const [editingTags, setEditingTags] = useState(false);
+  const [tempTags, setTempTags] = useState([]);
+
   if (!email) return null;
+
+  const getTagColor = (tag) => {
+    return "#64748b"; // default gray
+  };
+
+  const handleEditTags = () => {
+    setEditingTags(true);
+    setTempTags([...(email.tags || [])]);
+  };
+
+  const handleSaveTags = async () => {
+    try {
+      await onUpdateTags(email._id, tempTags);
+      setEditingTags(false);
+    } catch (error) {
+      console.error("Error updating tags:", error);
+    }
+  };
+
+  const handleCancelEditTags = () => {
+    setEditingTags(false);
+    setTempTags([]);
+  };
+
+  const handleAddTag = (newTag) => {
+    if (newTag && !tempTags.includes(newTag) && tempTags.length < 2) {
+      setTempTags([...tempTags, newTag]);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setTempTags(tempTags.filter(tag => tag !== tagToRemove));
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -243,6 +282,173 @@ export default function EmailModal({
               email.folderId ||
               "Unknown"}
           </p>
+        </div>
+
+        {/* Tags Section */}
+        <div
+          style={{
+            marginBottom: "1.5rem",
+            padding: "1rem",
+            backgroundColor: "#f8fafc",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between",
+            marginBottom: "0.5rem"
+          }}>
+            <h4 style={{ 
+              margin: 0, 
+              fontSize: "14px", 
+              fontWeight: "600", 
+              color: "#374151",
+              display: "flex",
+              alignItems: "center"
+            }}>
+              <Tag size={16} style={{ marginRight: "6px" }} />
+              Tags
+            </h4>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {!editingTags && (
+                <button
+                  onClick={handleEditTags}
+                  style={{
+                    backgroundColor: "#6366f1",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center"
+                  }}
+                >
+                  <Plus size={12} style={{ marginRight: "4px" }} />
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
+
+          {editingTags ? (
+            <div>
+              <div style={{ 
+                display: "flex", 
+                flexWrap: "wrap", 
+                gap: "0.5rem", 
+                marginBottom: "0.5rem" 
+              }}>
+                {tempTags.map((tag, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      backgroundColor: getTagColor(tag),
+                      color: "white",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      padding: "4px 8px",
+                      borderRadius: "12px",
+                      textTransform: "capitalize",
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => handleRemoveTag(tag)}
+                  >
+                    {tag} ×
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  placeholder={tempTags.length >= 2 ? "Max 2 tags" : "Add tag and press Enter"}
+                  disabled={tempTags.length >= 2}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    width: "130px",
+                    backgroundColor: tempTags.length >= 2 ? "#f3f4f6" : "white",
+                    color: tempTags.length >= 2 ? "#9ca3af" : "#374151"
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim() && tempTags.length < 2) {
+                      handleAddTag(e.target.value.trim().toLowerCase());
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={handleSaveTags}
+                  style={{
+                    backgroundColor: "#10b981",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelEditTags}
+                  style={{
+                    backgroundColor: "#6b7280",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ 
+              display: "flex", 
+              flexWrap: "wrap", 
+              gap: "0.5rem",
+              minHeight: "24px"
+            }}>
+              {email.tags && email.tags.length > 0 ? (
+                email.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      backgroundColor: getTagColor(tag),
+                      color: "white",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      padding: "4px 8px",
+                      borderRadius: "12px",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))
+              ) : (
+                <span style={{ 
+                  color: "#9ca3af", 
+                  fontSize: "12px", 
+                  fontStyle: "italic" 
+                }}>
+                  No tags assigned
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Email Content */}
