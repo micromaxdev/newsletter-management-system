@@ -56,8 +56,8 @@ class EmailTaggingService extends BaseEmailProcessor {
       }
     };
 
-    // Minimum score threshold for assigning a tag
-    this.minTagScore = 10;
+    // Minimum score threshold for assigning a tag (increased to be more strict)
+    this.minTagScore = 25;
   }
 
   /**
@@ -83,14 +83,15 @@ class EmailTaggingService extends BaseEmailProcessor {
       .filter(([tagId, score]) => score >= this.minTagScore)
       .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
 
-    // Get the top 2 tags
-    const generatedTags = sortedTags.slice(0, 2).map(([tagId]) => tagId);
+    // Get the top 2 tags, but only if they meet the threshold
+    const generatedTags = sortedTags.length > 0 ? sortedTags.slice(0, 2).map(([tagId]) => tagId) : [];
 
     console.log(`🏷️ Email tagging:`, {
       subject: emailData.subject?.substring(0, 50) + '...',
       from: sender.email,
       scores: tagScores,
-      assignedTags: generatedTags
+      assignedTags: generatedTags,
+      minThreshold: this.minTagScore
     });
 
     return generatedTags;

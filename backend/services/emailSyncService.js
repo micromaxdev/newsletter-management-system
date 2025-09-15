@@ -90,7 +90,10 @@ const syncEmailsFromPOP3 = () => {
         if (status) {
           try {
             const parsed = await simpleParser(data);
+            console.log(`[EMAIL SYNC] Processing email: ${parsed.subject}, MessageID: ${parsed.messageId}`);
+            
             const existingEmail = await Email.findOne({ messageId: parsed.messageId });
+            console.log(`[EMAIL SYNC] Existing email check result: ${existingEmail ? 'FOUND' : 'NOT FOUND'}`);
 
             if (!existingEmail) {
               const folderId = emailCategorizationService.categorizeEmail(parsed, client.senderPreferencesCache);
@@ -121,8 +124,14 @@ const syncEmailsFromPOP3 = () => {
         }
 
         emailsProcessed++;
+        console.log(`[EMAIL SYNC] Processed ${emailsProcessed}/${msgcount} emails`);
+        
         if (emailsProcessed === msgcount) {
+          console.log(`[EMAIL SYNC] All emails processed, quitting client`);
           client.quit();
+        } else {
+          // Continue fetching the next email
+          fetchNextEmail();
         }
       });
 
