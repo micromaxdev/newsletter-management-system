@@ -161,9 +161,8 @@ export default function HomePage({ handleLogout }) {
           "Sync complete:",
           data.categorization || "No categorization data"
         );
-        await fetchEmails();
-        await fetchCounts();
-        setSelectedEmailForModal(null);
+        // Refresh the entire page to ensure all data is reloaded
+        window.location.reload();
       } else {
         setError(
           `Sync failed: ${data.message || data.error || response.statusText}`
