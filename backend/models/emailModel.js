@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const emailSchema = mongoose.Schema(
@@ -40,6 +39,11 @@ const emailSchema = mongoose.Schema(
       enum: ['inbox', 'supplier', 'competitor', 'information', 'customers', 'marketing', 'archive'], // Enforce valid folder IDs
       default: 'inbox',
       index: true // Add index for faster filtering by folder
+    },
+    tags: {
+      type: [String],
+      default: [], // Default to an empty array
+      index: true // Add index for faster filtering by tags
     },
     isRead: {
       type: Boolean,

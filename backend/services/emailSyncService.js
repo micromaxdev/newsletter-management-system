@@ -3,8 +3,10 @@ const { simpleParser } = require('mailparser');
 const Email = require('../models/emailModel');
 const SenderPreference = require('../models/senderPreferenceModel');
 const EmailCategorizationService = require('../services/emailCategorizationService');
+const EmailTaggingService = require('../services/emailTaggingService');
 
 const emailCategorizationService = new EmailCategorizationService();
+const emailTaggingService = new EmailTaggingService();
 
 const syncEmailsFromPOP3 = () => {
   return new Promise((resolve, reject) => {
@@ -92,6 +94,7 @@ const syncEmailsFromPOP3 = () => {
 
             if (!existingEmail) {
               const folderId = emailCategorizationService.categorizeEmail(parsed, client.senderPreferencesCache);
+              const tags = emailTaggingService.generateTags(parsed);
               const newEmail = new Email({
                 subject: parsed.subject,
                 from: {
@@ -103,6 +106,7 @@ const syncEmailsFromPOP3 = () => {
                 html: parsed.html,
                 messageId: parsed.messageId,
                 folderId: folderId,
+                tags: tags,
                 isRead: false,
                 isStarred: false,
               });

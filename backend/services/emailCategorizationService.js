@@ -1,8 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const BaseEmailProcessor = require('./baseEmailProcessor');
 
-class EmailCategorizationService {
+class EmailCategorizationService extends BaseEmailProcessor {
   constructor() {
+    super(); // Call parent constructor to initialize matchWeights
+    
     // Define comprehensive categorization rules with enhanced patterns
     this.categories = {
       supplier: {
@@ -120,15 +123,6 @@ class EmailCategorizationService {
       'supplier', 'customers', 'competitor', 'marketing', 'information'
     ];
 
-    // Scoring weights for different match types
-    this.matchWeights = {
-      senderAddress: 10,
-      senderName: 8,
-      domainPattern: 9,
-      subjectKeyword: 7,
-      contentKeyword: 5
-    };
-
     // Minimum score threshold for categorization
     this.minCategoryScore = 15;
 
@@ -194,112 +188,11 @@ class EmailCategorizationService {
    */
   calculateCategoryScore(categoryId, sender, subject, content) {
     const category = this.categories[categoryId];
-    if (!category) return 0;
-
-    let score = 0;
-
-    // Check sender email keywords
-    const senderAddressMatches = this.countKeywordMatches(sender.email, category.senderKeywords);
-    score += senderAddressMatches * this.matchWeights.senderAddress;
-
-    // Check sender name keywords
-    const senderNameMatches = this.countKeywordMatches(sender.name, category.senderKeywords);
-    score += senderNameMatches * this.matchWeights.senderName;
-
-    // Check domain patterns
-    if (category.domainPatterns && sender.domain) {
-      for (const pattern of category.domainPatterns) {
-        if (pattern.test(sender.domain)) {
-          score += this.matchWeights.domainPattern;
-          break; // Only count one domain match
-        }
-      }
-    }
-
-    // Check subject keywords
-    const subjectMatches = this.countKeywordMatches(subject, category.subjectKeywords);
-    score += subjectMatches * this.matchWeights.subjectKeyword;
-
-    // Check content keywords
-    if (content && category.contentKeywords) {
-      const contentMatches = this.countKeywordMatches(content, category.contentKeywords);
-      score += contentMatches * this.matchWeights.contentKeyword;
-    }
-
-    return score;
+    return this.calculateBaseScore(category, sender, subject, content);
   }
 
-  /**
-   * Count how many keywords match in the text
-   * @param {string} text 
-   * @param {Array} keywords 
-   * @returns {number}
-   */
-  countKeywordMatches(text, keywords) {
-    if (!text || !keywords) return 0;
-
-    let matches = 0;
-    const lowerText = text.toLowerCase();
-
-    for (const keyword of keywords) {
-      if (lowerText.includes(keyword.toLowerCase())) {
-        matches++;
-      }
-    }
-
-    return matches;
-  }
-
-  /**
-   * Extract sender information from email
-   * @param {Object} emailData 
-   * @returns {Object} - Normalized sender info
-   */
-  extractSenderInfo(emailData) {
-    let senderAddress = '';
-    let senderName = '';
-    let senderDomain = '';
-
-    if (emailData.from) {
-      if (typeof emailData.from === 'string') {
-        senderAddress = emailData.from.toLowerCase();
-      } else if (emailData.from.address) {
-        senderAddress = emailData.from.address.toLowerCase();
-        senderName = (emailData.from.name || '').toLowerCase();
-      } else if (emailData.from?.value && emailData.from.value.length > 0) {
-        // fallback if from.value exists
-        senderAddress = emailData.from.value[0].address.toLowerCase();
-        senderName = (emailData.from.value[0].name || '').toLowerCase();
-      }
-    }
-
-    if (senderAddress.includes('@')) {
-      senderDomain = senderAddress.split('@')[1];
-    }
-
-    return { email: senderAddress, name: senderName, domain: senderDomain };
-  }
-
-  /**
-   * Extract content from email text/html
-   * @param {Object} emailData 
-   * @returns {string}
-   */
-  extractContent(emailData) {
-    let content = '';
-
-    if (emailData.text) {
-      content += emailData.text.toLowerCase();
-    }
-
-    if (emailData.html) {
-      // Strip HTML tags and get text content
-      const htmlText = emailData.html.replace(/<[^>]*>/g, ' ').toLowerCase();
-      content += ' ' + htmlText;
-    }
-
-    // Limit content length for performance
-    return content.trim().substring(0, 2000);
+  addCustomRule(categoryId, rules) {
+    this.addCustomRuleToCollection(categoryId, rules, this.categories, this.categoryPriority);
   }
 
   /**
@@ -369,52 +262,6 @@ class EmailCategorizationService {
     }
 
     return info;
-  }
-
-  addCustomRule(categoryId, rules) {
-    if (!this.categories[categoryId]) {
-      this.categories[categoryId] = {
-        senderKeywords: [],
-        subjectKeywords: [],
-        domainPatterns: [],
-        contentKeywords: []
-      };
-      if (!this.categoryPriority.includes(categoryId)) {
-        this.categoryPriority.push(categoryId);
-      }
-    }
-
-    if (rules.senderKeywords && Array.isArray(rules.senderKeywords)) {
-      this.categories[categoryId].senderKeywords.push(...rules.senderKeywords);
-    }
-
-    if (rules.subjectKeywords && Array.isArray(rules.subjectKeywords)) {
-      this.categories[categoryId].subjectKeywords.push(...rules.subjectKeywords);
-    }
-
-    if (rules.domainPatterns && Array.isArray(rules.domainPatterns)) {
-      const patterns = rules.domainPatterns.map(pattern => {
-        if (typeof pattern === 'string') {
-          // Prevent invalid regex: trailing backslash or malformed
-          if (/\\$/.test(pattern)) {
-            console.warn('Skipped invalid regex pattern (trailing backslash):', pattern);
-            return null;
-          }
-          try {
-            return new RegExp(pattern, 'i');
-          } catch (e) {
-            console.warn('Skipped invalid regex pattern:', pattern, e.message);
-            return null;
-          }
-        }
-        return pattern;
-      }).filter(Boolean);
-      this.categories[categoryId].domainPatterns.push(...patterns);
-    }
-
-    if (rules.contentKeywords && Array.isArray(rules.contentKeywords)) {
-      this.categories[categoryId].contentKeywords.push(...rules.contentKeywords);
-    }
   }
 
   learnFromCorrection(emailData, correctCategory, predictedCategory) {

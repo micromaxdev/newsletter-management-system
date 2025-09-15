@@ -2,7 +2,8 @@ const asyncHandler = require('express-async-handler');
 const Email = require('../models/emailModel');
 const SenderPreference = require('../models/senderPreferenceModel');
 const { syncEmailsFromPOP3 } = require('../services/emailSyncService');
-
+const emailTaggingServices = require('../services/emailTaggingService');
+const emailTaggingService = new emailTaggingServices();
 // Define valid folder IDs
 const VALID_FOLDER_IDS = [
   'inbox', 'supplier', 'competitor', 'information',
@@ -248,7 +249,6 @@ const manualCategorization = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: 'Email manually categorized successfully.', email });
 });
-
 const getEmailStatistics = asyncHandler(async (req, res) => {
   const totalEmails = await Email.countDocuments();
   const totalUnread = await Email.countDocuments({ isRead: false });
@@ -299,7 +299,40 @@ const validateCategorization = asyncHandler(async (req, res) => {
     simulatedAccuracy: accuracy.toFixed(2) + '%'
   });
 });
+// Generate tags for an email
+const tagEmail = asyncHandler(async (req, res) => {
+  const { emailId } = req.params;
+  const email = await Email.findById(emailId);
+  if (!email) {
+    return res.status(404).json({ message: 'Email not found' });
+  }
 
+  const tags = emailTaggingService.generateTags(email);
+  email.tags = tags;
+  await email.save();
+
+  res.status(200).json({ message: 'Tags generated and saved.', tags, email });
+});
+
+// Update tags of an email
+const updateEmailTags = asyncHandler(async (req, res) => {
+  const { emailId } = req.params;
+  const { tags } = req.body;
+
+  if (!Array.isArray(tags)) {
+    return res.status(400).json({ message: 'Tags should be an array of strings.' });
+  }
+
+  const email = await Email.findById(emailId);
+  if (!email) {
+    return res.status(404).json({ message: 'Email not found' });
+  }
+
+  email.tags = tags;
+  await email.save();
+
+  res.status(200).json({ message: 'Tags updated successfully.', email });
+});
 // Export all functions
 module.exports = {
   getEmails,
@@ -316,4 +349,6 @@ module.exports = {
   manualCategorization,
   getEmailStatistics,
   validateCategorization,
+  tagEmail,
+  updateEmailTags
 };

@@ -16,7 +16,7 @@
     "poplib": "^0.1.7"
   },
   "scripts": {
-    "server": "node backend/server.js",
+    "server": "nodemon backend/server.js",
     "client": "yarn --cwd frontend start",
     "dev": "concurrently \"yarn server\" \"yarn client\""
   },

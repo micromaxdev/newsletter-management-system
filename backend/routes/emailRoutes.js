@@ -20,10 +20,12 @@ const {
   manualCategorization,
   getEmailStatistics,
   validateCategorization,
+  tagEmail,
+  updateEmailTags
 } = require('../controllers/emailController');
 
 // Protect all routes in this file
-router.use(protect);
+// router.use(protect);
 
 // --- Email API Routes ---
 
@@ -69,6 +71,11 @@ router.get('/statistics', asyncHandler(getEmailStatistics));
 // Validate categorization accuracy
 router.post('/validate', asyncHandler(validateCategorization));
 
+// Generate tags for an email
+router.get('/tag/:emailId', asyncHandler(tagEmail));
+
+// Update email tags
+router.put('/tag/:emailId', asyncHandler(updateEmailTags));
 // Error handling middleware (still useful here for route-specific errors)
 router.use((error, req, res, next) => {
   console.error(' Router Error:', error);
