@@ -422,22 +422,27 @@ export default function EmailModal({
               minHeight: "24px"
             }}>
               {email.tags && email.tags.length > 0 ? (
-                email.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      backgroundColor: getTagColor(tag),
-                      color: "white",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      padding: "4px 8px",
-                      borderRadius: "12px",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))
+                email.tags.map((tag, index) => {
+                  let displayTag = tag;
+                  if (tag.length === 2) displayTag = tag.toUpperCase();
+                  else displayTag = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+                  return (
+                    <span
+                      key={index}
+                      style={{
+                        backgroundColor: getTagColor(tag),
+                        color: "white",
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {displayTag}
+                    </span>
+                  );
+                })
               ) : (
                 <span style={{ 
                   color: "#9ca3af", 

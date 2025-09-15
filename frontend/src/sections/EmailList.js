@@ -43,23 +43,28 @@ export default function EmailList({
         flexWrap: "wrap"
       }}>
         <Tag size={14} style={{ color: "#64748b", flexShrink: 0 }} />
-        {tags.map((tag, index) => (
-          <span
-            key={index}
-            style={{
-              backgroundColor: getTagColor(tag),
-              color: "white",
-              fontSize: "11px",
-              fontWeight: "500",
-              padding: "2px 8px",
-              borderRadius: "12px",
-              textTransform: "capitalize",
-              display: "inline-block",
-            }}
-          >
-            {tag}
-          </span>
-        ))}
+        {tags.map((tag, index) => {
+          let displayTag = tag;
+          if (tag.length === 2) displayTag = tag.toUpperCase();
+          else displayTag = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+          return (
+            <span
+              key={index}
+              style={{
+                backgroundColor: getTagColor(tag),
+                color: "white",
+                fontSize: "11px",
+                fontWeight: "500",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                textTransform: "capitalize",
+                display: "inline-block",
+              }}
+            >
+              {displayTag}
+            </span>
+          );
+        })}
       </div>
     );
   };
