@@ -16,6 +16,8 @@ import EmailModal from "../modals/EmailModal";
 import AdminModal from "../modals/AdminModal";
 import FolderTree from "../sections/FolderTree";
 import EmailList from "../sections/EmailList";
+import useEmails from "../hooks/useEmails";
+import useFilters from "../hooks/useFilters";
 
 const folderConfig = [
   { id: "inbox", name: "Inbox", icon: Inbox },
@@ -28,253 +30,64 @@ const folderConfig = [
 ];
 
 export default function HomePage({ handleLogout }) {
-  const [selectedFolder, setSelectedFolder] = useState("all");
   const [folders, setFolders] = useState([]);
-  const [allEmails, setAllEmails] = useState([]);
-  const [displayedEmails, setDisplayedEmails] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [emailCounts, setEmailCounts] = useState({});
-  const [unreadCounts, setUnreadCounts] = useState({});
   const [showAdmin, setShowAdmin] = useState(false);
   const [selectedEmailForModal, setSelectedEmailForModal] = useState(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  // Use custom hooks
+  const {
+    allEmails,
+    displayedEmails,
+    loading,
+    error,
+    unreadCounts,
+    isInitialLoad,
+    fetchEmails,
+    fetchCounts,
+    syncEmails,
+    markEmailAsRead,
+    moveEmail,
+    updateTags,
+    updateDisplayedEmails
+  } = useEmails();
 
-  // Initial load effect
+  const {
+    selectedFolder,
+    searchQuery,
+    daysFilter,
+    tagFilter,
+    availableTags,
+    setSelectedFolder,
+    setSearchQuery,
+    setDaysFilter,
+    setTagFilter,
+    getCurrentFolderName,
+    formatTagDisplayName
+  } = useFilters(allEmails, updateDisplayedEmails);
+
+    // Initial load effect
   useEffect(() => {
     setFolders(folderConfig);
     fetchEmails();
     fetchCounts();
     // eslint-disable-next-line
-  }, []);
+  }, [fetchEmails, fetchCounts]);
 
-  // Folder/search change effect
+  // Folder/search change effect with debouncing
   useEffect(() => {
     if (isInitialLoad) return;
 
-    const handleFetch = () => {
-      // Always fetch from the server when search query or folder changes
-      fetchEmails();
-    };
-
-    // Debounce the fetch operation
-    const timeoutId = setTimeout(handleFetch, 300);
+    // Only fetch from server for search queries and folder changes
+    // Days and tag filters are handled locally by useFilters
+    const timeoutId = setTimeout(() => {
+      fetchEmails({ 
+        searchQuery: searchQuery.trim(), 
+        folderId: selectedFolder !== "all" ? selectedFolder : null 
+      });
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedFolder, searchQuery]);
-
-  
-
-  const fetchEmails = async () => {
-    // Only show loading spinner on initial load or when there are no emails
-    if (isInitialLoad || displayedEmails.length === 0) {
-      setLoading(true);
-    }
-    
-    setError("");
-    try {
-      const params = new URLSearchParams();
-      
-      // For initial load or search queries, fetch from server
-      if (searchQuery.trim()) {
-        params.append("q", searchQuery.trim());
-      }
-      if (selectedFolder !== "all") {
-        params.append("folderId", selectedFolder);
-      }
-      // For initial load, get all emails
-
-      const response = await fetch(`${API_URL}/api/emails/saved?${params.toString()}`, { credentials: "include" });
-      const data = await response.json();
-
-      if (data.emails) {
-        setAllEmails(data.emails);
-        
-        setDisplayedEmails(data.emails);
-      } else {
-        setAllEmails([]);
-        setDisplayedEmails([]);
-      }
-      
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
-      }
-    } catch (error) {
-      console.error("Error fetching emails:", error);
-      setError("Failed to fetch emails.");
-      setAllEmails([]);
-      setDisplayedEmails([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCounts = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/emails/counts`, { credentials: "include" });
-      const data = await response.json();
-
-      if (data.counts && data.unreadCounts) {
-        setEmailCounts(data.counts);
-        setUnreadCounts(data.unreadCounts);
-      } else if (data.error) {
-        console.error("Error from counts API:", data.error);
-        setError(`Failed to load counts: ${data.error}`);
-      }
-    } catch (error) {
-      console.error("Error fetching email counts:", error);
-      setError("Failed to fetch email counts.");
-    }
-  };
-
-  const syncEmails = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      console.log("Starting email sync...");
-      const response = await fetch(`${API_URL}/api/emails`, { credentials: "include" });
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log(
-          "Sync complete:",
-          data.categorization || "No categorization data"
-        );
-        // Refresh the entire page to ensure all data is reloaded
-        window.location.reload();
-      } else {
-        setError(
-          `Sync failed: ${data.message || data.error || response.statusText}`
-        );
-      }
-    } catch (error) {
-      console.error("Error syncing emails:", error);
-      setError("Failed to sync emails. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markEmailAsRead = async (emailId) => {
-    try {
-      const response = await fetch(`${API_URL}/api/emails/${emailId}/read`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include"
-      });
-
-      if (response.ok) {
-        setAllEmails((prevEmails) =>
-          prevEmails.map((email) =>
-            email._id === emailId ? { ...email, isRead: true } : email
-          )
-        );
-        setDisplayedEmails((prevEmails) =>
-          prevEmails.map((email) =>
-            email._id === emailId ? { ...email, isRead: true } : email
-          )
-        );
-        setSelectedEmailForModal((prev) =>
-          prev && prev._id === emailId ? { ...prev, isRead: true } : prev
-        );
-        fetchCounts();
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to mark email as read:", errorData.error);
-      }
-    } catch (error) {
-      console.error("Error marking email as read:", error);
-    }
-  };
-
-  const moveEmail = async (emailId, newFolderId) => {
-    try {
-      const response = await fetch(`${API_URL}/api/emails/${emailId}/folder`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folderId: newFolderId }),
-        credentials: "include"
-      });
-
-      if (response.ok) {
-        setAllEmails((prevEmails) =>
-          prevEmails.map((email) =>
-            email._id === emailId ? { ...email, folderId: newFolderId } : email
-          )
-        );
-        setSelectedEmailForModal((prev) =>
-          prev && prev._id === emailId
-            ? { ...prev, folderId: newFolderId }
-            : prev
-        );
-
-        await fetchEmails();
-        await fetchCounts();
-      } else {
-        const errorData = await response.json();
-        setError(
-          `Failed to move email: ${errorData.error || response.statusText}`
-        );
-      }
-    } catch (error) {
-      console.error("Error moving email:", error);
-      setError("Failed to move email due to network error.");
-    }
-  };
-
-  const updateTags = async (emailId, tags) => {
-    try {
-      const response = await fetch(`${API_URL}/api/emails/tag/${emailId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tags }),
-        credentials: "include"
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Update the email in both allEmails and displayedEmails
-        setAllEmails((prevEmails) =>
-          prevEmails.map((email) =>
-            email._id === emailId ? { ...email, tags: data.email.tags } : email
-          )
-        );
-        setDisplayedEmails((prevEmails) =>
-          prevEmails.map((email) =>
-            email._id === emailId ? { ...email, tags: data.email.tags } : email
-          )
-        );
-        setSelectedEmailForModal((prev) =>
-          prev && prev._id === emailId ? { ...prev, tags: data.email.tags } : prev
-        );
-      } else {
-        const errorData = await response.json();
-        setError(
-          `Failed to update tags: ${errorData.message || response.statusText}`
-        );
-      }
-    } catch (error) {
-      console.error("Error updating tags:", error);
-      setError("Failed to update tags due to network error.");
-    }
-  };
-
-  const getCurrentFolderName = () => {
-    if (selectedFolder === "all") return "All Emails";
-    return (
-      folderConfig.find((f) => f.id === selectedFolder)?.name ||
-      "Unknown Folder"
-    );
-  };
+  }, [selectedFolder, searchQuery, isInitialLoad, fetchEmails]);
 
   const handleEmailClick = (email) => {
     setSelectedEmailForModal(email);
@@ -360,6 +173,49 @@ export default function HomePage({ handleLogout }) {
                 }}
               />
             </div>
+
+            {/* Days filter dropdown */}
+            <select
+              value={daysFilter}
+              onChange={(e) => setDaysFilter(e.target.value)}
+              style={{
+                padding: "6px 12px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All time</option>
+              <option value="1">Today</option>
+              <option value="2">Yesterday</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+
+            {/* Tag filter dropdown */}
+            <select
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              style={{
+                padding: "6px 12px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                cursor: "pointer",
+                minWidth: "120px",
+              }}
+            >
+              <option value="">All tags</option>
+              {availableTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {formatTagDisplayName(tag)}
+                </option>
+              ))}
+            </select>
 
             <button
               onClick={syncEmails}
@@ -459,9 +315,23 @@ export default function HomePage({ handleLogout }) {
           }}
         >
           {/* Folder Header */}
-          <div style={{ marginBottom: "1rem", flexShrink: 0, height: "60px", display: "flex", alignItems: "center" }}>
-            <h2 style={{ fontSize: "1.2rem", color: "#1e293b", margin: 0 }}>
-              {getCurrentFolderName()}
+          <div
+            style={{
+              marginBottom: "1rem",
+              flexShrink: 0,
+              height: "60px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.2rem",
+                color: "#1e293b",
+                margin: 0,
+              }}
+            >
+              {getCurrentFolderName(folderConfig)}
               <span
                 style={{
                   fontSize: "0.9rem",
