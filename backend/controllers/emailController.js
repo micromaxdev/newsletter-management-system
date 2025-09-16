@@ -333,6 +333,56 @@ const updateEmailTags = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: 'Tags updated successfully.', email });
 });
+// Get emails by tag
+const getEmailsByTag = asyncHandler(async (req, res) => {
+  const {tag} = req.params;
+
+  if (!tag || typeof tag !== 'string' || tag.trim() === '') {
+    return res.status(400).json({ message: 'Invalid or missing tag parameter.' });
+  }
+
+  const filter = { tags: tag.toLowerCase() };
+
+  const emails = await Email.find(filter).sort({ date: -1 });
+
+  const total = await Email.countDocuments(filter);
+
+  res.status(200).json({
+    emails,
+    total
+  });
+});
+// Get emails by days ago (e.g., last 7 days, last 30 days)
+const getEmailsByDaysAgo = asyncHandler(async (req, res) => {
+  const { days } = req.query;
+
+  if (!days || isNaN(days) || parseInt(days) < 0) {
+    return res.status(400).json({ message: 'Please provide a valid number of days (e.g., ?days=7 for last 7 days).' });
+  }
+
+  const daysAgo = parseInt(days);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysAgo);
+  startDate.setHours(0, 0, 0, 0); // Start of the day
+
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999); // End of today
+
+  const filter = { date: { $gte: startDate, $lte: endDate } }; // Corrected filter for days ago
+
+  const emails = await Email.find(filter).select('-__v -createdAt -updatedAt').sort({ date: -1 });
+  const total = await Email.countDocuments(filter);
+
+  res.status(200).json({
+    emails,
+    total,
+    dateRange: {
+      from: startDate.toISOString().split('T')[0],  
+      to: endDate.toISOString().split('T')[0],
+      description: `Emails from last ${daysAgo} days`
+    }
+  });
+});
 // Export all functions
 module.exports = {
   getEmails,
@@ -350,5 +400,7 @@ module.exports = {
   getEmailStatistics,
   validateCategorization,
   tagEmail,
-  updateEmailTags
+  updateEmailTags,
+  getEmailsByTag,
+  getEmailsByDaysAgo
 };

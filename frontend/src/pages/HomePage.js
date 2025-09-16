@@ -51,32 +51,22 @@ export default function HomePage({ handleLogout }) {
     // eslint-disable-next-line
   }, []);
 
-  // Folder/search change effect with client-side filtering for better performance
+  // Folder/search change effect
   useEffect(() => {
-    if (!isInitialLoad) {
-      // If we have all emails and we're just changing folders (not searching), filter client-side
-      if (!searchQuery.trim() && allEmails.length > 0) {
-        filterEmailsClientSide();
-      } else {
-        // For search queries, we need to fetch from server
-        const timeoutId = setTimeout(() => {
-          fetchEmails();
-        }, 300); // Debounce search queries
-        
-        return () => clearTimeout(timeoutId);
-      }
-    }
-    // eslint-disable-next-line
+    if (isInitialLoad) return;
+
+    const handleFetch = () => {
+      // Always fetch from the server when search query or folder changes
+      fetchEmails();
+    };
+
+    // Debounce the fetch operation
+    const timeoutId = setTimeout(handleFetch, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedFolder, searchQuery]);
 
-  const filterEmailsClientSide = () => {
-    if (selectedFolder === "all") {
-      setDisplayedEmails(allEmails);
-    } else {
-      const filtered = allEmails.filter(email => email.folderId === selectedFolder);
-      setDisplayedEmails(filtered);
-    }
-  };
+  
 
   const fetchEmails = async () => {
     // Only show loading spinner on initial load or when there are no emails
@@ -91,9 +81,9 @@ export default function HomePage({ handleLogout }) {
       // For initial load or search queries, fetch from server
       if (searchQuery.trim()) {
         params.append("q", searchQuery.trim());
-        if (selectedFolder !== "all") {
-          params.append("folderId", selectedFolder);
-        }
+      }
+      if (selectedFolder !== "all") {
+        params.append("folderId", selectedFolder);
       }
       // For initial load, get all emails
 
@@ -103,15 +93,7 @@ export default function HomePage({ handleLogout }) {
       if (data.emails) {
         setAllEmails(data.emails);
         
-        // Filter immediately based on current folder selection
-        if (searchQuery.trim()) {
-          setDisplayedEmails(data.emails);
-        } else if (selectedFolder === "all") {
-          setDisplayedEmails(data.emails);
-        } else {
-          const filtered = data.emails.filter(email => email.folderId === selectedFolder);
-          setDisplayedEmails(filtered);
-        }
+        setDisplayedEmails(data.emails);
       } else {
         setAllEmails([]);
         setDisplayedEmails([]);

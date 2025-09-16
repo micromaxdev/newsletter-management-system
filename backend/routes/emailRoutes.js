@@ -21,7 +21,9 @@ const {
   getEmailStatistics,
   validateCategorization,
   tagEmail,
-  updateEmailTags
+  updateEmailTags,
+  getEmailsByTag,
+  getEmailsByDaysAgo
 } = require('../controllers/emailController');
 
 // Protect all routes in this file
@@ -76,6 +78,13 @@ router.get('/tag/:emailId', asyncHandler(tagEmail));
 
 // Update email tags
 router.put('/tag/:emailId', asyncHandler(updateEmailTags));
+
+// Get emails by tag
+router.get('/tag/:tag/emails', asyncHandler(getEmailsByTag));
+
+// Get emails by days ago
+router.get('/days-ago', asyncHandler(getEmailsByDaysAgo));
+
 // Error handling middleware (still useful here for route-specific errors)
 router.use((error, req, res, next) => {
   console.error(' Router Error:', error);
