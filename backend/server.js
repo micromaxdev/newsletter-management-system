@@ -4,6 +4,8 @@ const connectDB = require("./config/db");
 const path = require("path");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const http = require("http");
+const { initializeSocket } = require("./config/socket");
 // Schedule tasks to be run on the server.
 const cron = require("node-cron");
 // Schedule to run once a day at midnight.
@@ -15,6 +17,11 @@ const folderRoutes = require("./routes/folderRoutes");
 const userRoutes = require("./routes/userRoutes");
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+initializeSocket(server);
+
 connectDB(); // Connect to MongoDB
 // One-time cleanup: remove sender preferences with null senderAddress
 const SenderPreference = require("./models/senderPreferenceModel");
@@ -71,4 +78,4 @@ cron.schedule('*/10 * * * *', () => {
     });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

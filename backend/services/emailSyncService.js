@@ -115,6 +115,16 @@ const syncEmailsFromPOP3 = () => {
               });
               await newEmail.save();
               console.log(`[EMAIL SYNC] Saved new email: ${parsed.subject}`);
+              
+              // Emit WebSocket notification for new email
+              if (global.io) {
+                global.io.emit('new-email', {
+                  email: newEmail,
+                  message: `New email received: ${parsed.subject}`,
+                  timestamp: new Date().toISOString()
+                });
+                console.log(`[WEBSOCKET] Emitted new-email event for: ${parsed.subject}`);
+              }
             } else {
               console.log(`[EMAIL SYNC] Skipping duplicate email: ${parsed.subject}`);
             }

@@ -13,7 +13,8 @@
     "mailparser": "^3.7.4",
     "mongoose": "^8.16.4",
     "node-cron": "^4.2.1",
-    "poplib": "^0.1.7"
+    "poplib": "^0.1.7",
+    "socket.io": "^4.8.1"
   },
   "scripts": {
     "server": "nodemon backend/server.js",
