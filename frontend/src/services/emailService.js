@@ -1,7 +1,7 @@
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 class EmailService {
-  // Fetch all saved emails with optional filters
+  // Fetch all saved emails with optional filters and pagination
   async fetchEmails(params = {}) {
     try {
       const queryParams = new URLSearchParams();
@@ -11,6 +11,12 @@ class EmailService {
       }
       if (params.folderId && params.folderId !== "all") {
         queryParams.append("folderId", params.folderId);
+      }
+      if (params.page) {
+        queryParams.append("page", params.page.toString());
+      }
+      if (params.limit) {
+        queryParams.append("limit", params.limit.toString());
       }
 
       const response = await fetch(

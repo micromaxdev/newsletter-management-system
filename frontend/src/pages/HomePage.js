@@ -36,19 +36,18 @@ export default function HomePage({ handleLogout }) {
 
   // Use custom hooks
   const {
-    allEmails,
     displayedEmails,
     loading,
     error,
     unreadCounts,
-    isInitialLoad,
+    pagination,
     fetchEmails,
     fetchCounts,
     syncEmails,
     markEmailAsRead,
     moveEmail,
     updateTags,
-    updateDisplayedEmails
+    loadMoreEmails
   } = useEmails();
 
   const {
@@ -57,37 +56,44 @@ export default function HomePage({ handleLogout }) {
     daysFilter,
     tagFilter,
     availableTags,
+    filteredEmails, // Now this contains the final filtered emails to display
     setSelectedFolder,
     setSearchQuery,
     setDaysFilter,
     setTagFilter,
     getCurrentFolderName,
     formatTagDisplayName
-  } = useFilters(allEmails, updateDisplayedEmails);
+  } = useFilters(displayedEmails, fetchEmails);
 
     // Initial load effect
   useEffect(() => {
     setFolders(folderConfig);
-    fetchEmails();
+    // Load initial emails for "all" folder
+    fetchEmails({ folderId: "all", page: 1 });
     fetchCounts();
-    // eslint-disable-next-line
   }, [fetchEmails, fetchCounts]);
 
-  // Folder/search change effect with debouncing
+  // Search query effect with debouncing
   useEffect(() => {
-    if (isInitialLoad) return;
+    // Only fetch from server for search queries
+    if (searchQuery.trim()) {
+      const timeoutId = setTimeout(() => {
+        fetchEmails({ 
+          searchQuery: searchQuery.trim(),
+          folderId: selectedFolder !== "all" ? selectedFolder : undefined,
+          page: 1
+        });
+      }, 300);
 
-    // Only fetch from server for search queries and folder changes
-    // Days and tag filters are handled locally by useFilters
-    const timeoutId = setTimeout(() => {
+      return () => clearTimeout(timeoutId);
+    } else if (searchQuery === "") {
+      // If search is cleared, reload current folder
       fetchEmails({ 
-        searchQuery: searchQuery.trim(), 
-        folderId: selectedFolder !== "all" ? selectedFolder : null 
+        folderId: selectedFolder !== "all" ? selectedFolder : undefined,
+        page: 1 
       });
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedFolder, searchQuery, isInitialLoad, fetchEmails]);
+    }
+  }, [searchQuery, selectedFolder, fetchEmails]);
 
   const handleEmailClick = (email) => {
     setSelectedEmailForModal(email);
@@ -339,7 +345,7 @@ export default function HomePage({ handleLogout }) {
                   marginLeft: "8px",
                 }}
               >
-                ({displayedEmails.length} emails)
+                (Showing {filteredEmails.length} emails{pagination ? ` of ${pagination.totalEmails}` : ""})
               </span>
               {searchQuery && (
                 <span
@@ -385,7 +391,7 @@ export default function HomePage({ handleLogout }) {
             }}
           >
             <EmailList
-              emails={displayedEmails}
+              emails={filteredEmails}
               loading={loading}
               error={error}
               selectedFolder={selectedFolder}
@@ -393,6 +399,8 @@ export default function HomePage({ handleLogout }) {
               selectedEmailForModal={selectedEmailForModal}
               onEmailClick={handleEmailClick}
               folderConfig={folderConfig}
+              pagination={pagination}
+              onLoadMore={loadMoreEmails}
             />
           </div>
         </section>
@@ -408,7 +416,7 @@ export default function HomePage({ handleLogout }) {
           onClose={handleCloseEmailModal}
           folderConfig={folderConfig}
           onMoveEmail={moveEmail}
-          displayedEmails={displayedEmails}
+          displayedEmails={filteredEmails}
           onSelectEmail={setSelectedEmailForModal}
           onMarkAsRead={markEmailAsRead}
           onUpdateTags={updateTags}

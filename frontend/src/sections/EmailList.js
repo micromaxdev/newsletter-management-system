@@ -18,6 +18,8 @@ export default function EmailList({
   selectedEmailForModal,
   onEmailClick,
   folderConfig,
+  pagination,
+  onLoadMore,
 }) {
   const formatSender = (from) => {
     if (!from) return "Unknown";
@@ -287,6 +289,99 @@ export default function EmailList({
             </div>
           </div>
         ))}
+        
+        {/* Load More Button */}
+        {pagination && pagination.hasNextPage && !loading && (
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "2rem 0",
+            marginTop: "1rem",
+            borderTop: "1px solid #e2e8f0"
+          }}>
+            <button
+              onClick={() => {
+                console.log("Load More button clicked"); // Debug log
+                onLoadMore();
+              }}
+              disabled={loading}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.75rem 1.5rem",
+                backgroundColor: loading ? "#f1f5f9" : "#4f46e5",
+                color: loading ? "#64748b" : "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: loading ? "none" : "0 2px 4px rgba(79, 70, 229, 0.2)"
+              }}
+              onMouseOver={(e) => {
+                if (!loading) {
+                  e.target.style.backgroundColor = "#4338ca";
+                  e.target.style.transform = "translateY(-1px)";
+                  e.target.style.boxShadow = "0 4px 8px rgba(79, 70, 229, 0.3)";
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!loading) {
+                  e.target.style.backgroundColor = "#4f46e5";
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "0 2px 4px rgba(79, 70, 229, 0.2)";
+                }
+              }}
+            >
+              {loading ? (
+                <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+              ) : (
+                <Mail size={16} />
+              )}
+              {loading ? "Loading..." : `Load More (${pagination.totalEmails - emails.length} remaining)`}
+            </button>
+          </div>
+        )}
+        
+        {/* Loading indicator for Load More */}
+        {loading && pagination && pagination.currentPage > 1 && (
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "2rem 0",
+            marginTop: "1rem",
+            borderTop: "1px solid #e2e8f0"
+          }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              color: "#64748b",
+              fontSize: "14px"
+            }}>
+              <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+              Loading more emails...
+            </div>
+          </div>
+        )}
+        
+        {/* Pagination Info */}
+        {pagination && (
+          <div style={{
+            textAlign: "center",
+            padding: "1rem",
+            fontSize: "14px",
+            color: "#64748b",
+            borderTop: pagination.hasNextPage ? "none" : "1px solid #e2e8f0"
+          }}>
+            Showing {emails.length} of {pagination.totalEmails} emails
+            {pagination.totalPages > 1 && (
+              <span> • Page {pagination.currentPage} of {pagination.totalPages}</span>
+            )}
+          </div>
+        )}
       </div>
     );
   }

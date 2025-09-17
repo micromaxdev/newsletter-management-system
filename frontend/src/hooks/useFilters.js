@@ -1,16 +1,15 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
-const useFilters = (allEmails, onDisplayedEmailsChange) => {
+const useFilters = (displayedEmails, fetchEmails) => {
   const [selectedFolder, setSelectedFolder] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [daysFilter, setDaysFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
-  const lastFilteredEmailsRef = useRef([]);
 
-  // Extract available tags from emails (memoized)
+  // Extract available tags from currently displayed emails (memoized)
   const availableTags = useMemo(() => {
     const tags = new Set();
-    allEmails.forEach(email => {
+    displayedEmails.forEach(email => {
       if (email.tags && Array.isArray(email.tags)) {
         email.tags.forEach(tag => {
           // Normalize tags to avoid duplicates
@@ -20,30 +19,13 @@ const useFilters = (allEmails, onDisplayedEmailsChange) => {
       }
     });
     return Array.from(tags).sort();
-  }, [allEmails]);
+  }, [displayedEmails]);
 
-  // Apply all filters (memoized)
+  // Apply local filters (days and tag filters only - folder and search are handled server-side)
   const filteredEmails = useMemo(() => {
-    let filtered = allEmails;
+    let filtered = displayedEmails;
 
-    // Apply folder filter
-    if (selectedFolder !== "all") {
-      filtered = filtered.filter((email) => email.folderId === selectedFolder);
-    }
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (email) =>
-          email.subject?.toLowerCase().includes(query) ||
-          email.from?.address?.toLowerCase().includes(query) ||
-          email.from?.name?.toLowerCase().includes(query) ||
-          email.text?.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply days filter
+    // Apply days filter (local filtering)
     if (daysFilter && daysFilter !== "") {
       const daysAgo = parseInt(daysFilter);
       if (!isNaN(daysAgo) && daysAgo >= 0) {
@@ -60,7 +42,7 @@ const useFilters = (allEmails, onDisplayedEmailsChange) => {
       }
     }
 
-    // Apply tag filter
+    // Apply tag filter (local filtering)
     if (tagFilter && tagFilter !== "") {
       filtered = filtered.filter(email => 
         email.tags && email.tags.some(emailTag => 
@@ -70,19 +52,29 @@ const useFilters = (allEmails, onDisplayedEmailsChange) => {
     }
 
     return filtered;
-  }, [allEmails, selectedFolder, searchQuery, daysFilter, tagFilter]);
+  }, [displayedEmails, daysFilter, tagFilter]);
 
-  // Update displayed emails when filtered emails change
-  useEffect(() => {
-    // Only call if the filtered emails actually changed
-    const currentEmailIds = filteredEmails.map(e => e._id).join(',');
-    const lastEmailIds = lastFilteredEmailsRef.current.map(e => e._id).join(',');
-    
-    if (currentEmailIds !== lastEmailIds) {
-      lastFilteredEmailsRef.current = filteredEmails;
-      onDisplayedEmailsChange(filteredEmails);
-    }
-  }, [filteredEmails, onDisplayedEmailsChange]);
+  // Handle folder changes (triggers server-side fetch)
+  const handleFolderChange = useCallback((newFolderId) => {
+    setSelectedFolder(newFolderId);
+    // Clear local filters when changing folders
+    setDaysFilter("");
+    setTagFilter("");
+    // Trigger server-side fetch
+    fetchEmails({ 
+      folderId: newFolderId,
+      searchQuery: searchQuery.trim() || undefined,
+      page: 1 
+    });
+  }, [searchQuery, fetchEmails]);
+
+  // Handle search changes (triggers server-side fetch)
+  const handleSearchChange = useCallback((newSearchQuery) => {
+    setSearchQuery(newSearchQuery);
+    // Clear local filters when searching
+    setDaysFilter("");
+    setTagFilter("");
+  }, []);
 
   // Get current folder name
   const getCurrentFolderName = useCallback((folderConfig) => {
@@ -99,7 +91,9 @@ const useFilters = (allEmails, onDisplayedEmailsChange) => {
     setSearchQuery("");
     setDaysFilter("");
     setTagFilter("");
-  }, []);
+    // Trigger fresh fetch
+    fetchEmails({ folderId: "all", page: 1 });
+  }, [fetchEmails]);
 
   // Format tag display name
   const formatTagDisplayName = useCallback((tag) => {
@@ -115,12 +109,13 @@ const useFilters = (allEmails, onDisplayedEmailsChange) => {
     daysFilter,
     tagFilter,
     availableTags,
+    filteredEmails, // Now returns locally filtered emails
 
     // Filter setters
-    setSelectedFolder,
-    setSearchQuery,
-    setDaysFilter,
-    setTagFilter,
+    setSelectedFolder: handleFolderChange, // Now triggers server fetch
+    setSearchQuery: handleSearchChange,    // Used for display, actual fetch triggered by HomePage
+    setDaysFilter,                         // Local filtering only
+    setTagFilter,                          // Local filtering only
 
     // Utility functions
     getCurrentFolderName,

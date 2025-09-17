@@ -22,7 +22,7 @@ const getEmails = asyncHandler(async (req, res) => {
 });
 
 const getSavedEmails = asyncHandler(async (req, res) => {
-  const { folderId, q } = req.query; // q for search query
+  const { folderId, q, page = 1, limit = 50 } = req.query; // Added pagination
   const filter = {};
 
   if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
@@ -38,8 +38,32 @@ const getSavedEmails = asyncHandler(async (req, res) => {
     ];
   }
 
-  const emails = await Email.find(filter).sort({ date: -1 });
-  res.status(200).json({ emails });
+  // Convert to numbers and set reasonable limits
+  const pageNum = Math.max(1, parseInt(page));
+  const limitNum = Math.min(100, Math.max(10, parseInt(limit))); // Min 10, max 100 emails per page
+  const skip = (pageNum - 1) * limitNum;
+
+  // Get total count for pagination info
+  const totalEmails = await Email.countDocuments(filter);
+  const totalPages = Math.ceil(totalEmails / limitNum);
+
+  // Get paginated emails
+  const emails = await Email.find(filter)
+    .sort({ date: -1 })
+    .skip(skip)
+    .limit(limitNum);
+
+  res.status(200).json({ 
+    emails,
+    pagination: {
+      currentPage: pageNum,
+      totalPages,
+      totalEmails,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+      limit: limitNum
+    }
+  });
 });
 
 const getUnreadCount = asyncHandler(async (req, res) => {

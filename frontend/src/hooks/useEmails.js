@@ -2,46 +2,135 @@ import { useState, useCallback } from 'react';
 import emailService from '../services/emailService';
 
 const useEmails = () => {
-  const [allEmails, setAllEmails] = useState([]);
+  // Remove allEmails - we'll use smart caching instead
+  const [folderCache, setFolderCache] = useState({}); // Cache emails by folder
   const [displayedEmails, setDisplayedEmails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailCounts, setEmailCounts] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [pagination, setPagination] = useState(null);
+  const [currentFolder, setCurrentFolder] = useState("all");
+  const [currentSearch, setCurrentSearch] = useState("");
 
-  // Fetch emails from the server
+  // Fetch emails from the server with intelligent caching
   const fetchEmails = useCallback(async (params = {}) => {
-    // Only show loading spinner on initial load or when there are no emails
-    if (isInitialLoad || displayedEmails.length === 0) {
-      setLoading(true);
-    }
+    const { searchQuery = "", folderId = "all", page = 1, limit = 50, forceRefresh = false } = params;
     
-    setError("");
-    try {
-      const data = await emailService.fetchEmails(params);
+    // Create cache key
+    const cacheKey = `${folderId}-${searchQuery}-${page}`;
+    
+    // If we have cached data and not forcing refresh, use it
+    if (!forceRefresh && folderCache[cacheKey]) {
+      setDisplayedEmails(folderCache[cacheKey].emails);
+      setPagination(folderCache[cacheKey].pagination);
+      setCurrentFolder(folderId);
+      setCurrentSearch(searchQuery);
+      return;
+    }
 
-      if (data.emails) {
-        setAllEmails(data.emails);
-        // Don't set displayedEmails here - let useFilters handle it
+    setLoading(true);
+    setError("");
+    
+    try {
+      const data = await emailService.fetchEmails({
+        searchQuery: searchQuery.trim() || undefined,
+        folderId: folderId !== "all" ? folderId : undefined,
+        page,
+        limit
+      });
+
+      console.log("Fetch emails response:", data); // Debug log
+
+      if (data.emails && data.pagination) {
+        // Cache the result
+        setFolderCache(prev => ({
+          ...prev,
+          [cacheKey]: {
+            emails: data.emails,
+            pagination: data.pagination,
+            timestamp: Date.now()
+          }
+        }));
+        
+        setDisplayedEmails(data.emails);
+        setPagination(data.pagination);
+        setCurrentFolder(folderId);
+        setCurrentSearch(searchQuery);
+        
+        console.log("Set pagination:", data.pagination); // Debug log
       } else {
-        setAllEmails([]);
-        // Only clear displayedEmails if we have no data at all
         setDisplayedEmails([]);
-      }
-      
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
+        setPagination(null);
       }
     } catch (error) {
       console.error("Error fetching emails:", error);
       setError("Failed to fetch emails.");
-      setAllEmails([]);
       setDisplayedEmails([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
-  }, [isInitialLoad, displayedEmails.length]);
+  }, [folderCache]);
+
+  // Clear cache for specific folder or all
+  const clearCache = useCallback((folderId = null) => {
+    if (folderId) {
+      setFolderCache(prev => {
+        const newCache = { ...prev };
+        Object.keys(newCache).forEach(key => {
+          if (key.startsWith(`${folderId}-`)) {
+            delete newCache[key];
+          }
+        });
+        return newCache;
+      });
+    } else {
+      setFolderCache({});
+    }
+  }, []);
+
+  // Load more emails (pagination)
+  const loadMoreEmails = useCallback(async () => {
+    if (!pagination || !pagination.hasNextPage || loading) {
+      console.log("Cannot load more:", { pagination, loading }); // Debug log
+      return;
+    }
+    
+    console.log("Loading more emails. Current pagination:", pagination); // Debug log
+    console.log("Current displayed emails count:", displayedEmails.length); // Debug log
+    
+    setLoading(true);
+    try {
+      const data = await emailService.fetchEmails({
+        searchQuery: currentSearch.trim() || undefined,
+        folderId: currentFolder !== "all" ? currentFolder : undefined,
+        page: pagination.currentPage + 1,
+        limit: 50
+      });
+
+      console.log("Load more response:", data); // Debug log
+
+      if (data.emails && data.pagination) {
+        // Append new emails to existing ones
+        setDisplayedEmails(prevEmails => {
+          const updatedEmails = [...prevEmails, ...data.emails];
+          console.log("Updated emails count:", updatedEmails.length); // Debug log
+          return updatedEmails;
+        });
+        
+        setPagination(data.pagination);
+        console.log("New pagination:", data.pagination); // Debug log
+        
+        // Don't update cache for load more - keep it simple
+      }
+    } catch (error) {
+      console.error("Error loading more emails:", error);
+      setError("Failed to load more emails.");
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination, currentSearch, currentFolder, loading, displayedEmails]);
 
   // Fetch email counts
   const fetchCounts = useCallback(async () => {
@@ -73,7 +162,8 @@ const useEmails = () => {
         "Sync complete:",
         data.categorization || "No categorization data"
       );
-      // Refresh the entire page to ensure all data is reloaded
+      // Clear all cache and refresh
+      clearCache();
       window.location.reload();
     } catch (error) {
       console.error("Error syncing emails:", error);
@@ -81,20 +171,22 @@ const useEmails = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearCache]);
 
   // Mark email as read
   const markEmailAsRead = useCallback(async (emailId) => {
     try {
       await emailService.markEmailAsRead(emailId);
       
-      // Update local state
-      setAllEmails((prevEmails) =>
+      // Update displayed emails
+      setDisplayedEmails((prevEmails) =>
         prevEmails.map((email) =>
           email._id === emailId ? { ...email, isRead: true } : email
         )
       );
-      // Let useFilters handle displayedEmails update
+      
+      // Clear cache to ensure fresh data on next load
+      clearCache();
       
       // Refresh counts
       fetchCounts();
@@ -102,78 +194,79 @@ const useEmails = () => {
       console.error("Error marking email as read:", error);
       setError("Failed to mark email as read.");
     }
-  }, [fetchCounts]);
+  }, [fetchCounts, clearCache]);
 
   // Move email to folder
   const moveEmail = useCallback(async (emailId, newFolderId) => {
     try {
       await emailService.moveEmail(emailId, newFolderId);
       
-      // Update local state
-      setAllEmails((prevEmails) =>
-        prevEmails.map((email) =>
-          email._id === emailId ? { ...email, folderId: newFolderId } : email
-        )
+      // Remove email from current display (it moved to different folder)
+      setDisplayedEmails((prevEmails) =>
+        prevEmails.filter((email) => email._id !== emailId)
       );
       
-      // Only refresh counts, let filters handle the display
+      // Clear cache to ensure fresh data
+      clearCache();
+      
+      // Refresh counts
       await fetchCounts();
     } catch (error) {
       console.error("Error moving email:", error);
       setError(`Failed to move email: ${error.message}`);
     }
-  }, [fetchCounts]);
+  }, [fetchCounts, clearCache]);
 
   // Generate tags for email
   const generateTags = useCallback(async (emailId) => {
     try {
       const data = await emailService.generateTags(emailId);
       
-      // Update the email in allEmails only
-      setAllEmails((prevEmails) =>
+      // Update the email in displayed emails
+      setDisplayedEmails((prevEmails) =>
         prevEmails.map((email) =>
           email._id === emailId ? { ...email, tags: data.tags } : email
         )
       );
-      // Let useFilters handle displayedEmails update
+      
+      // Clear cache to ensure consistency
+      clearCache();
     } catch (error) {
       console.error("Error generating tags:", error);
       setError(`Failed to generate tags: ${error.message}`);
     }
-  }, []);
+  }, [clearCache]);
 
   // Update email tags
   const updateTags = useCallback(async (emailId, tags) => {
     try {
       const data = await emailService.updateTags(emailId, tags);
       
-      // Update the email in allEmails only
-      setAllEmails((prevEmails) =>
+      // Update the email in displayed emails
+      setDisplayedEmails((prevEmails) =>
         prevEmails.map((email) =>
           email._id === emailId ? { ...email, tags: data.email.tags } : email
         )
       );
-      // Let useFilters handle displayedEmails update
+      
+      // Clear cache to ensure consistency
+      clearCache();
     } catch (error) {
       console.error("Error updating tags:", error);
       setError(`Failed to update tags: ${error.message}`);
     }
-  }, []);
-
-  // Update displayed emails (for filtering)
-  const updateDisplayedEmails = useCallback((emails) => {
-    setDisplayedEmails(emails);
-  }, []);
+  }, [clearCache]);
 
   return {
     // State
-    allEmails,
     displayedEmails,
     loading,
     error,
     emailCounts,
     unreadCounts,
-    isInitialLoad,
+    pagination,
+    currentFolder,
+    currentSearch,
     
     // Actions
     fetchEmails,
@@ -183,7 +276,8 @@ const useEmails = () => {
     moveEmail,
     generateTags,
     updateTags,
-    updateDisplayedEmails,
+    loadMoreEmails,
+    clearCache,
     setError
   };
 };
