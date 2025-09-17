@@ -21,38 +21,54 @@ const useFilters = (displayedEmails, fetchEmails) => {
     return Array.from(tags).sort();
   }, [displayedEmails]);
 
+  // Check if any local filters are active
+  const hasActiveFilters = useMemo(() => {
+    return (daysFilter && daysFilter !== "") || (tagFilter && tagFilter !== "");
+  }, [daysFilter, tagFilter]);
+
+  // Memoize cutoff date calculation for days filter
+  const cutoffDate = useMemo(() => {
+    if (!daysFilter || daysFilter === "") return null;
+    
+    const daysAgo = parseInt(daysFilter);
+    if (isNaN(daysAgo) || daysAgo < 0) return null;
+    
+    const date = new Date();
+    if (daysAgo > 0) {
+      date.setDate(date.getDate() - (daysAgo - 1));
+    }
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [daysFilter]);
+
+  // Memoize normalized tag filter for better performance
+  const normalizedTagFilter = useMemo(() => {
+    return tagFilter ? tagFilter.toLowerCase() : null;
+  }, [tagFilter]);
+
   // Apply local filters (days and tag filters only - folder and search are handled server-side)
   const filteredEmails = useMemo(() => {
     let filtered = displayedEmails;
 
     // Apply days filter (local filtering)
-    if (daysFilter && daysFilter !== "") {
-      const daysAgo = parseInt(daysFilter);
-      if (!isNaN(daysAgo) && daysAgo >= 0) {
-        const cutoffDate = new Date();
-        if (daysAgo > 0) {
-          cutoffDate.setDate(cutoffDate.getDate() - (daysAgo - 1));
-        }
-        cutoffDate.setHours(0, 0, 0, 0);
-
-        filtered = filtered.filter((email) => {
-          const emailDate = new Date(email.date);
-          return emailDate >= cutoffDate;
-        });
-      }
+    if (cutoffDate) {
+      filtered = filtered.filter((email) => {
+        const emailDate = new Date(email.date);
+        return emailDate >= cutoffDate;
+      });
     }
 
     // Apply tag filter (local filtering)
-    if (tagFilter && tagFilter !== "") {
+    if (normalizedTagFilter) {
       filtered = filtered.filter(email => 
         email.tags && email.tags.some(emailTag => 
-          emailTag.toLowerCase() === tagFilter.toLowerCase()
+          emailTag.toLowerCase() === normalizedTagFilter
         )
       );
     }
 
     return filtered;
-  }, [displayedEmails, daysFilter, tagFilter]);
+  }, [displayedEmails, cutoffDate, normalizedTagFilter]);
 
   // Handle folder changes (triggers server-side fetch)
   const handleFolderChange = useCallback((newFolderId) => {
@@ -110,9 +126,10 @@ const useFilters = (displayedEmails, fetchEmails) => {
     tagFilter,
     availableTags,
     filteredEmails, // Now returns locally filtered emails
+    hasActiveFilters, // Indicates if local filters are active
 
     // Filter setters
-    setSelectedFolder: handleFolderChange, // Now triggers server fetch
+    setSelectedFolder: handleFolderChange, // triggers server fetch
     setSearchQuery: handleSearchChange,    // Used for display, actual fetch triggered by HomePage
     setDaysFilter,                         // Local filtering only
     setTagFilter,                          // Local filtering only

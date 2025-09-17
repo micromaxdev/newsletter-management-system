@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Mail,
   Shield,
@@ -22,7 +22,8 @@ import useEmails from "../hooks/useEmails";
 import useFilters from "../hooks/useFilters";
 import useWebSocket from "../hooks/useWebSocket";
 
-const folderConfig = [
+// Move folderConfig outside component to prevent re-creation on every render
+const FOLDER_CONFIG = [
   { id: "inbox", name: "Inbox", icon: Inbox },
   { id: "supplier", name: "Suppliers", icon: Package },
   { id: "competitor", name: "Competitors", icon: TrendingUp },
@@ -74,6 +75,7 @@ export default function HomePage({ handleLogout }) {
     tagFilter,
     availableTags,
     filteredEmails, // Now this contains the final filtered emails to display
+    hasActiveFilters, // Whether local filters are active
     setSelectedFolder,
     setSearchQuery,
     setDaysFilter,
@@ -84,7 +86,7 @@ export default function HomePage({ handleLogout }) {
 
     // Initial load effect
   useEffect(() => {
-    setFolders(folderConfig);
+    setFolders(FOLDER_CONFIG);
     // Load initial emails for "all" folder
     fetchEmails({ folderId: "all", page: 1 });
     fetchCounts();
@@ -133,16 +135,112 @@ export default function HomePage({ handleLogout }) {
     }
   }, [searchQuery, selectedFolder, fetchEmails]);
 
-  const handleEmailClick = (email) => {
+  // Memoized event handlers to prevent child re-renders
+  const handleEmailClick = useCallback((email) => {
     setSelectedEmailForModal(email);
     if (!email.isRead) {
       markEmailAsRead(email._id);
     }
-  };
+  }, [markEmailAsRead]);
 
-  const handleCloseEmailModal = () => {
+  const handleCloseEmailModal = useCallback(() => {
     setSelectedEmailForModal(null);
-  };
+  }, []);
+
+  // Memoize filter handlers
+  const handleSearchChange = useCallback((e) => {
+    setSearchQuery(e.target.value);
+  }, [setSearchQuery]);
+
+  const handleDaysFilterChange = useCallback((e) => {
+    setDaysFilter(e.target.value);
+  }, [setDaysFilter]);
+
+  const handleTagFilterChange = useCallback((e) => {
+    setTagFilter(e.target.value);
+  }, [setTagFilter]);
+
+  // Memoize admin and sync handlers
+  const handleShowAdmin = useCallback(() => {
+    setShowAdmin(true);
+  }, []);
+
+  const handleCloseAdmin = useCallback(() => {
+    setShowAdmin(false);
+  }, []);
+
+  const handleSyncEmails = useCallback(async () => {
+    await syncEmails();
+  }, [syncEmails]);
+
+  // Compute effective pagination - hide load more when local filters are active
+  // and we're showing all fetched emails (even if server has more pages)
+  const effectivePagination = useMemo(() => {
+    if (!pagination) return null;
+    
+    // If local filters are active, we need to check if we should show load more
+    if (hasActiveFilters) {
+      // If filtered emails length equals displayed emails length, 
+      // it means we're showing all available emails after filtering
+      // In this case, don't show load more even if server has more pages
+      return {
+        ...pagination,
+        hasNextPage: filteredEmails.length === displayedEmails.length && pagination.hasNextPage
+      };
+    }
+    
+    // No local filters active, use original pagination
+    return pagination;
+  }, [pagination, hasActiveFilters, filteredEmails.length, displayedEmails.length]);
+
+  // Memoize filter status display to avoid recalculation on every render
+  const filterStatusDisplay = useMemo(() => {
+    if (!daysFilter && !tagFilter) return null;
+    
+    const parts = [];
+    if (daysFilter) {
+      parts.push(`last ${daysFilter} day${daysFilter === "1" ? "" : "s"}`);
+    }
+    if (tagFilter) {
+      parts.push(`"${formatTagDisplayName(tagFilter)}" tag`);
+    }
+    
+    return `filtered by ${parts.join(" and ")}`;
+  }, [daysFilter, tagFilter, formatTagDisplayName]);
+
+  // Memoize email count display to avoid recalculation on every render
+  const emailCountDisplay = useMemo(() => {
+    if (hasActiveFilters) {
+      let display = `Showing ${filteredEmails.length} filtered emails`;
+      if (displayedEmails.length > filteredEmails.length) {
+        display += ` from ${displayedEmails.length} fetched`;
+      }
+      if (pagination) {
+        display += ` of ${pagination.totalEmails} total`;
+      }
+      return `(${display})`;
+    } else {
+      return `(Showing ${filteredEmails.length} emails${pagination ? ` of ${pagination.totalEmails}` : ""})`;
+    }
+  }, [hasActiveFilters, filteredEmails.length, displayedEmails.length, pagination]);
+
+  // Memoize LoadingSkeleton component to prevent recreation
+  const LoadingSkeleton = useCallback(() => (
+    <div style={{ padding: "1rem" }}>
+      {[...Array(5)].map((_, index) => (
+        <div
+          key={index}
+          style={{
+            height: "80px",
+            backgroundColor: "#f1f5f9",
+            marginBottom: "8px",
+            borderRadius: "8px",
+            animation: "pulse 1.5s infinite",
+          }}
+        />
+      ))}
+    </div>
+  ), []);
 
   return (
     <div
@@ -227,7 +325,7 @@ export default function HomePage({ handleLogout }) {
                 type="text"
                 placeholder="Search emails..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 style={{
                   paddingLeft: "32px",
                   paddingRight: "12px",
@@ -244,7 +342,7 @@ export default function HomePage({ handleLogout }) {
             {/* Days filter dropdown */}
             <select
               value={daysFilter}
-              onChange={(e) => setDaysFilter(e.target.value)}
+              onChange={handleDaysFilterChange}
               style={{
                 padding: "6px 12px",
                 border: "1px solid #e2e8f0",
@@ -265,7 +363,7 @@ export default function HomePage({ handleLogout }) {
             {/* Tag filter dropdown */}
             <select
               value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
+              onChange={handleTagFilterChange}
               style={{
                 padding: "6px 12px",
                 border: "1px solid #e2e8f0",
@@ -285,7 +383,7 @@ export default function HomePage({ handleLogout }) {
             </select>
 
             <button
-              onClick={syncEmails}
+              onClick={handleSyncEmails}
               disabled={loading}
               style={{
                 backgroundColor: "#10b981",
@@ -310,7 +408,7 @@ export default function HomePage({ handleLogout }) {
             </button>
 
             <button
-              onClick={() => setShowAdmin(true)}
+              onClick={handleShowAdmin}
               style={{
                 backgroundColor: "#4f46e5",
                 color: "white",
@@ -398,7 +496,7 @@ export default function HomePage({ handleLogout }) {
                 margin: 0,
               }}
             >
-              {getCurrentFolderName(folderConfig)}
+              {getCurrentFolderName(FOLDER_CONFIG)}
               <span
                 style={{
                   fontSize: "0.9rem",
@@ -406,7 +504,7 @@ export default function HomePage({ handleLogout }) {
                   marginLeft: "8px",
                 }}
               >
-                (Showing {filteredEmails.length} emails{pagination ? ` of ${pagination.totalEmails}` : ""})
+                {emailCountDisplay}
               </span>
               {searchQuery && (
                 <span
@@ -419,7 +517,41 @@ export default function HomePage({ handleLogout }) {
                   - searching for "{searchQuery}"
                 </span>
               )}
+              {filterStatusDisplay && (
+                <span
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "#059669",
+                    marginLeft: "8px",
+                  }}
+                >
+                  - {filterStatusDisplay}
+                </span>
+              )}
             </h2>
+
+            {/* clear filters button when filters are active */}
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setDaysFilter("");
+                  setTagFilter("");
+                  setSearchQuery("");
+                }}
+                style={{
+                  backgroundColor: "#0d5ae8ff",
+                  color: "white",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  marginLeft: "8px",
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Error Message */}
@@ -451,31 +583,35 @@ export default function HomePage({ handleLogout }) {
               height: "100%",
             }}
           >
-            <EmailList
-              emails={filteredEmails}
-              loading={loading}
-              error={error}
-              selectedFolder={selectedFolder}
-              searchQuery={searchQuery}
-              selectedEmailForModal={selectedEmailForModal}
-              onEmailClick={handleEmailClick}
-              folderConfig={folderConfig}
-              pagination={pagination}
-              onLoadMore={loadMoreEmails}
-            />
+            {loading && displayedEmails.length === 0 ? (
+              <LoadingSkeleton />
+            ) : (
+              <EmailList
+                emails={filteredEmails}
+                loading={loading}
+                error={error}
+                selectedFolder={selectedFolder}
+                searchQuery={searchQuery}
+                selectedEmailForModal={selectedEmailForModal}
+                onEmailClick={handleEmailClick}
+                folderConfig={FOLDER_CONFIG}
+                pagination={effectivePagination}
+                onLoadMore={loadMoreEmails}
+              />
+            )}
           </div>
         </section>
       </main>
 
       {/* Admin Modal */}
-      {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
+      {showAdmin && <AdminModal onClose={handleCloseAdmin} />}
 
       {/* Email Modal */}
       {selectedEmailForModal && (
         <EmailModal
           email={selectedEmailForModal}
           onClose={handleCloseEmailModal}
-          folderConfig={folderConfig}
+          folderConfig={FOLDER_CONFIG}
           onMoveEmail={moveEmail}
           displayedEmails={filteredEmails}
           onSelectEmail={setSelectedEmailForModal}
