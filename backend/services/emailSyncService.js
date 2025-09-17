@@ -4,6 +4,7 @@ const Email = require('../models/emailModel');
 const SenderPreference = require('../models/senderPreferenceModel');
 const EmailCategorizationService = require('../services/emailCategorizationService');
 const EmailTaggingService = require('../services/emailTaggingService');
+const { getIO } = require('../config/socket');
 
 const emailCategorizationService = new EmailCategorizationService();
 const emailTaggingService = new EmailTaggingService();
@@ -117,8 +118,9 @@ const syncEmailsFromPOP3 = () => {
               console.log(`[EMAIL SYNC] Saved new email: ${parsed.subject}`);
               
               // Emit WebSocket notification for new email
-              if (global.io) {
-                global.io.emit('new-email', {
+              const io = getIO();
+              if (io) {
+                io.emit('new-email', {
                   email: newEmail,
                   message: `New email received: ${parsed.subject}`,
                   timestamp: new Date().toISOString()
