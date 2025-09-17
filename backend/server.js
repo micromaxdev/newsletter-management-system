@@ -6,9 +6,10 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const http = require("http");
 const { initializeSocket } = require("./config/socket");
+const { initializeGemini } = require("./config/gemini");
 // Schedule tasks to be run on the server.
 const cron = require("node-cron");
-// Schedule to run once a day at midnight.
+// Scheduled tasks.
 const { deleteOldEmails } = require("./services/cleanUpService");
 const { syncEmailsFromPOP3 } = require("./services/emailSyncService");
 // Import Route Files
@@ -19,16 +20,17 @@ const userRoutes = require("./routes/userRoutes");
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
-initializeSocket(server);
 
 connectDB(); // Connect to MongoDB
+// Initialize Socket.IO
+initializeSocket(server);
+// Initialize Gemini
+initializeGemini();
 // One-time cleanup: remove sender preferences with null senderAddress
 const SenderPreference = require("./models/senderPreferenceModel");
-connectDB();
 SenderPreference.deleteMany({ senderAddress: null })
   .then(() =>
-    console.log("Cleaned up sender preferences with null senderAddress")
+    console.log("[SYSTEM] Cleaned up sender preferences with null senderAddress")
   )
   .catch((err) => console.error("Cleanup error:", err));
 
@@ -78,4 +80,4 @@ cron.schedule('*/10 * * * *', () => {
     });
 });
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`[SYSTEM] Server running on port ${PORT}`));
