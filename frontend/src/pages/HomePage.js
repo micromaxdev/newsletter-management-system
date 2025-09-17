@@ -16,8 +16,11 @@ import EmailModal from "../modals/EmailModal";
 import AdminModal from "../modals/AdminModal";
 import FolderTree from "../sections/FolderTree";
 import EmailList from "../sections/EmailList";
+import NotificationCenter from "../components/NotificationCenter";
+import ToastContainer from "../components/ToastContainer";
 import useEmails from "../hooks/useEmails";
 import useFilters from "../hooks/useFilters";
+import useWebSocket from "../hooks/useWebSocket";
 
 const folderConfig = [
   { id: "inbox", name: "Inbox", icon: Inbox },
@@ -47,8 +50,22 @@ export default function HomePage({ handleLogout }) {
     markEmailAsRead,
     moveEmail,
     updateTags,
-    loadMoreEmails
+    loadMoreEmails,
+    clearCache
   } = useEmails();
+
+  // WebSocket hook
+  const {
+    isConnected,
+    connectionError,
+    newEmails,
+    notifications,
+    toasts,
+    markNotificationAsRead,
+    clearNotifications,
+    clearNewEmails,
+    removeToast
+  } = useWebSocket();
 
   const {
     selectedFolder,
@@ -72,6 +89,27 @@ export default function HomePage({ handleLogout }) {
     fetchEmails({ folderId: "all", page: 1 });
     fetchCounts();
   }, [fetchEmails, fetchCounts]);
+
+  // Handle new emails from WebSocket
+  useEffect(() => {
+    if (newEmails.length > 0) {
+      console.log('New emails received via WebSocket:', newEmails);
+      
+      // Clear cache first to ensure fresh data
+      clearCache();
+      
+      // Force refresh email list and counts when new emails arrive
+      fetchEmails({ 
+        folderId: selectedFolder !== "all" ? selectedFolder : undefined,
+        page: 1,
+        forceRefresh: true  // Force refresh to bypass cache
+      });
+      fetchCounts();
+      
+      // Clear new emails after processing
+      clearNewEmails();
+    }
+  }, [newEmails, selectedFolder, fetchEmails, fetchCounts, clearNewEmails, clearCache]);
 
   // Search query effect with debouncing
   useEffect(() => {
@@ -151,6 +189,29 @@ export default function HomePage({ handleLogout }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            {/* WebSocket Connection Status */}
+            {connectionError && (
+              <div style={{ 
+                color: "#dc2626", 
+                fontSize: "12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px"
+              }}>
+                <AlertCircle size={14} />
+                Connection Error
+              </div>
+            )}
+
+            {/* Notification Center */}
+            <NotificationCenter
+              notifications={notifications}
+              onMarkAsRead={markNotificationAsRead}
+              onClearAll={clearNotifications}
+              onEmailClick={handleEmailClick}
+              isConnected={isConnected}
+            />
+
             <div style={{ position: "relative" }}>
               <Search
                 size={16}
@@ -422,6 +483,12 @@ export default function HomePage({ handleLogout }) {
           onUpdateTags={updateTags}
         />
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer 
+        toasts={toasts} 
+        onRemoveToast={removeToast} 
+      />
 
       <style>{`
         @keyframes spin {
