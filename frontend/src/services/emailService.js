@@ -18,6 +18,13 @@ class EmailService {
       if (params.limit) {
         queryParams.append("limit", params.limit.toString());
       }
+      // Add server-side filtering for tags and days
+      if (params.tag) {
+        queryParams.append("tag", params.tag);
+      }
+      if (params.days) {
+        queryParams.append("days", params.days.toString());
+      }
 
       const response = await fetch(
         `${API_URL}/api/emails/saved?${queryParams.toString()}`,

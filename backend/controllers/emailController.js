@@ -22,7 +22,7 @@ const getEmails = asyncHandler(async (req, res) => {
 });
 
 const getSavedEmails = asyncHandler(async (req, res) => {
-  const { folderId, q, page = 1, limit = 50 } = req.query; // Added pagination
+  const { folderId, q, page = 1, limit = 50, days, tag } = req.query; // Added days and tag filters
   const filter = {};
 
   if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
@@ -36,6 +36,24 @@ const getSavedEmails = asyncHandler(async (req, res) => {
       { 'from.address': { $regex: q, $options: 'i' } },
       { text: { $regex: q, $options: 'i' } },
     ];
+  }
+
+  // Date filter - filter by days ago
+  if (days && !isNaN(days) && parseInt(days) >= 0) {
+    const daysAgo = parseInt(days);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysAgo);
+    startDate.setHours(0, 0, 0, 0); // Start of the day
+
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999); // End of today
+
+    filter.date = { $gte: startDate, $lte: endDate };
+  }
+
+  // Tag filter
+  if (tag && typeof tag === 'string' && tag.trim() !== '') {
+    filter.tags = tag.toLowerCase();
   }
 
   // Convert to numbers and set reasonable limits
@@ -62,6 +80,17 @@ const getSavedEmails = asyncHandler(async (req, res) => {
       hasNextPage: pageNum < totalPages,
       hasPrevPage: pageNum > 1,
       limit: limitNum
+    },
+    appliedFilters: {
+      folderId: folderId || null,
+      searchQuery: q || null,
+      days: days ? parseInt(days) : null,
+      tag: tag || null,
+      dateRange: days ? {
+        from: new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        to: new Date().toISOString().split('T')[0],
+        description: `Last ${days} days`
+      } : null
     }
   });
 });
@@ -357,56 +386,6 @@ const updateEmailTags = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: 'Tags updated successfully.', email });
 });
-// Get emails by tag
-const getEmailsByTag = asyncHandler(async (req, res) => {
-  const {tag} = req.params;
-
-  if (!tag || typeof tag !== 'string' || tag.trim() === '') {
-    return res.status(400).json({ message: 'Invalid or missing tag parameter.' });
-  }
-
-  const filter = { tags: tag.toLowerCase() };
-
-  const emails = await Email.find(filter).sort({ date: -1 });
-
-  const total = await Email.countDocuments(filter);
-
-  res.status(200).json({
-    emails,
-    total
-  });
-});
-// Get emails by days ago (e.g., last 7 days, last 30 days)
-const getEmailsByDaysAgo = asyncHandler(async (req, res) => {
-  const { days } = req.query;
-
-  if (!days || isNaN(days) || parseInt(days) < 0) {
-    return res.status(400).json({ message: 'Please provide a valid number of days (e.g., ?days=7 for last 7 days).' });
-  }
-
-  const daysAgo = parseInt(days);
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - daysAgo);
-  startDate.setHours(0, 0, 0, 0); // Start of the day
-
-  const endDate = new Date();
-  endDate.setHours(23, 59, 59, 999); // End of today
-
-  const filter = { date: { $gte: startDate, $lte: endDate } }; // Corrected filter for days ago
-
-  const emails = await Email.find(filter).select('-__v -createdAt -updatedAt').sort({ date: -1 });
-  const total = await Email.countDocuments(filter);
-
-  res.status(200).json({
-    emails,
-    total,
-    dateRange: {
-      from: startDate.toISOString().split('T')[0],  
-      to: endDate.toISOString().split('T')[0],
-      description: `Emails from last ${daysAgo} days`
-    }
-  });
-});
 // Export all functions
 module.exports = {
   getEmails,
@@ -424,7 +403,5 @@ module.exports = {
   getEmailStatistics,
   validateCategorization,
   tagEmail,
-  updateEmailTags,
-  getEmailsByTag,
-  getEmailsByDaysAgo
+  updateEmailTags
 };
