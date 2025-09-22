@@ -1,4 +1,5 @@
 import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
   RefreshCw,
@@ -21,6 +22,44 @@ export default function EmailList({
   pagination,
   onLoadMore,
 }) {
+  // Animation variants for better performance
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+        staggerChildren: 0.05
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: -20,
+      transition: { duration: 0.3, ease: "easeIn" }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut"
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: -20, 
+      scale: 0.95,
+      transition: { duration: 0.2 }
+    }
+  };
+
   const formatSender = (from) => {
     if (!from) return "Unknown";
     if (typeof from === "string") return from;
@@ -73,31 +112,52 @@ export default function EmailList({
 
   if (loading) {
     return (
-      <div style={{ 
-        textAlign: "center", 
-        padding: "2rem",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "400px"
-      }}>
-        <RefreshCw
-          size={24}
-          style={{
-            animation: "spin 1s linear infinite",
-            marginBottom: "8px",
-          }}
-        />
-        <p style={{ color: "#64748b" }}>Loading emails...</p>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        style={{ 
+          textAlign: "center", 
+          padding: "2rem",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px"
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <RefreshCw
+            size={24}
+            style={{
+              marginBottom: "8px",
+            }}
+          />
+        </motion.div>
+        <motion.p 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          style={{ color: "#64748b" }}
+        >
+          Loading emails...
+        </motion.p>
+      </motion.div>
     );
   }
 
   if (!loading && !error && emails.length === 0) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         style={{ 
           textAlign: "center", 
           padding: "2rem", 
@@ -110,63 +170,97 @@ export default function EmailList({
           minHeight: "400px"
         }}
       >
-        <Mail
-          size={48}
-          style={{ marginBottom: "1rem", color: "#e2e8f0" }}
-        />
-        <p>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.3, ease: "easeOut" }}
+        >
+          <Mail
+            size={48}
+            style={{ marginBottom: "1rem", color: "#e2e8f0" }}
+          />
+        </motion.div>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+        >
           No emails found{" "}
           {selectedFolder === "all" ? "" : "in this folder"}.
-        </p>
-        <p style={{ fontSize: "14px", marginTop: "8px" }}>
+        </motion.p>
+        <motion.p 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.3 }}
+          style={{ fontSize: "14px", marginTop: "8px" }}
+        >
           {searchQuery
             ? "Try a different search term"
             : selectedFolder === "all"
             ? 'Click "Sync" to fetch new emails'
             : "Emails will appear here when categorized"}
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     );
   }
 
   if (!loading && !error && emails.length > 0) {
     return (
-      <div style={{ 
-        transition: "opacity 0.2s ease-in-out", 
-        opacity: 1,
-        padding: "0 0 4rem 0",
-        minHeight: "400px"
-      }}>
-        {emails.map((email, i) => (
-          <div
-            key={email._id || i}
-            style={{
-              backgroundColor: email.isRead ? "white" : "#eff6ff",
-              borderRadius: "12px",
-              padding: "1.5rem",
-              marginBottom: "1rem",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              borderLeft:
-                selectedEmailForModal?._id === email._id
-                  ? "4px solid #4f46e5"
-                  : "4px solid transparent",
-              borderTop: "none",
-              borderRight: "none", 
-              borderBottom: "none",
-              transition: "background-color 0.2s, box-shadow 0.2s",
-              width: "100%",
-              maxWidth: "800px",
-              outline: "none",
-            }}
-            onClick={() => onEmailClick(email)}
-            onMouseEnter={(e) => {
-              e.target.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
-            }}
-          >
+      <motion.div
+        layout
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        style={{ 
+          transition: "opacity 0.2s ease-in-out", 
+          opacity: 1,
+          padding: "0 0 4rem 0",
+          minHeight: "400px"
+        }}
+      >
+        <AnimatePresence mode="wait">
+          {emails.map((email, i) => (
+            <motion.div
+              key={email._id || i}
+              layout
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              whileHover={{ 
+                scale: 1.02,
+                y: -2,
+                transition: { duration: 0.2, ease: "easeOut" }
+              }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                backgroundColor: email.isRead ? "white" : "#eff6ff",
+                borderRadius: "12px",
+                padding: "1.5rem",
+                marginBottom: "1rem",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                cursor: "pointer",
+                borderLeft:
+                  selectedEmailForModal?._id === email._id
+                    ? "4px solid #4f46e5"
+                    : "4px solid transparent",
+                borderTop: "none",
+                borderRight: "none", 
+                borderBottom: "none",
+                transition: "background-color 0.2s, box-shadow 0.2s",
+                width: "100%",
+                maxWidth: "800px",
+                outline: "none",
+              }}
+              onClick={() => onEmailClick(email)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+              }}
+            >
             <div
               style={{
                 display: "flex",
@@ -287,19 +381,31 @@ export default function EmailList({
                 }}
               />
             </div>
-          </div>
+          </motion.div>
         ))}
         
         {/* Load More Button */}
         {pagination && pagination.hasNextPage && !loading && (
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "2rem 0",
-            marginTop: "1rem",
-            borderTop: "1px solid #e2e8f0"
-          }}>
-            <button
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "2rem 0",
+              marginTop: "1rem",
+              borderTop: "1px solid #e2e8f0"
+            }}
+          >
+            <motion.button
+              whileHover={{ 
+                scale: 1.05,
+                y: -2,
+                boxShadow: "0 4px 8px rgba(79, 70, 229, 0.3)"
+              }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={() => {
                 console.log("Load More button clicked"); // Debug log
                 onLoadMore();
@@ -336,24 +442,35 @@ export default function EmailList({
               }}
             >
               {loading ? (
-                <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <RefreshCw size={16} />
+                </motion.div>
               ) : (
                 <Mail size={16} />
               )}
               {loading ? "Loading..." : `Load More (${pagination.totalEmails - emails.length} remaining)`}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
         
         {/* Loading indicator for Load More */}
         {loading && pagination && pagination.currentPage > 1 && (
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "2rem 0",
-            marginTop: "1rem",
-            borderTop: "1px solid #e2e8f0"
-          }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "2rem 0",
+              marginTop: "1rem",
+              borderTop: "1px solid #e2e8f0"
+            }}
+          >
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -361,28 +478,39 @@ export default function EmailList({
               color: "#64748b",
               fontSize: "14px"
             }}>
-              <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <RefreshCw size={16} />
+              </motion.div>
               Loading more emails...
             </div>
-          </div>
+          </motion.div>
         )}
         
         {/* Pagination Info */}
         {pagination && (
-          <div style={{
-            textAlign: "center",
-            padding: "1rem",
-            fontSize: "14px",
-            color: "#64748b",
-            borderTop: pagination.hasNextPage ? "none" : "1px solid #e2e8f0"
-          }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+            style={{
+              textAlign: "center",
+              padding: "1rem",
+              fontSize: "14px",
+              color: "#64748b",
+              borderTop: pagination.hasNextPage ? "none" : "1px solid #e2e8f0"
+            }}
+          >
             Showing {emails.length} of {pagination.totalEmails} emails
             {pagination.totalPages > 1 && (
               <span> • Page {pagination.currentPage} of {pagination.totalPages}</span>
             )}
-          </div>
+          </motion.div>
         )}
-      </div>
+        </AnimatePresence>
+      </motion.div>
     );
   }
 

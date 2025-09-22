@@ -28,7 +28,7 @@ const useFilters = (displayedEmails, fetchEmails) => {
     return (daysFilter && daysFilter !== "") || 
            (tagFilter && tagFilter !== "") ||
            (searchQuery && searchQuery.trim() !== "");
-  }, [daysFilter, tagFilter, searchQuery, selectedFolder]);
+  }, [daysFilter, tagFilter, searchQuery]);
 
   // Handle days filter changes (triggers server-side fetch with current folder)
   const handleDaysFilterChange = useCallback((newDaysFilter) => {
