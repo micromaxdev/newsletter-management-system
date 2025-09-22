@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
+import ApprovalQueue from "./pages/ApprovalQueue";
 import "./App.css";
 
 const API_URL = process.env.REACT_APP_API_URL;
@@ -53,13 +55,22 @@ function App() {
     );
   }
 
-  // If not authenticated, show login/register
-  if (!isAuthenticated) {
-    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-  }
-
-  // If authenticated, show main app
-  return <HomePage handleLogout={handleLogout} />;
+  return (
+    <Routes>
+      <Route 
+        path="/"
+        element={isAuthenticated ? <HomePage handleLogout={handleLogout} /> : <Navigate to="/auth" />}
+      />
+      <Route 
+        path="/auth"
+        element={!isAuthenticated ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Navigate to="/" />}
+      />
+      <Route 
+        path="/approval-queue"
+        element={isAuthenticated ? <ApprovalQueue /> : <Navigate to="/auth" />}
+      />
+    </Routes>
+  );
 }
 
 export default App;

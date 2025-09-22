@@ -110,103 +110,99 @@ export default function EmailList({
     );
   };
 
-  if (loading) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        style={{ 
-          textAlign: "center", 
-          padding: "2rem",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "400px"
-        }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+  return (
+    <AnimatePresence mode="wait" key={selectedFolder}>
+      {loading ? (
+        <motion.div 
+          key="loading"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          style={{ 
+            textAlign: "center", 
+            padding: "2rem",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "400px"
+          }}
         >
-          <RefreshCw
-            size={24}
-            style={{
-              marginBottom: "8px",
-            }}
-          />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <RefreshCw
+              size={24}
+              style={{
+                marginBottom: "8px",
+              }}
+            />
+          </motion.div>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            style={{ color: "#64748b" }}
+          >
+            Loading emails...
+          </motion.p>
         </motion.div>
-        <motion.p 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-          style={{ color: "#64748b" }}
-        >
-          Loading emails...
-        </motion.p>
-      </motion.div>
-    );
-  }
-
-  if (!loading && !error && emails.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ 
-          textAlign: "center", 
-          padding: "2rem", 
-          color: "#64748b",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "400px"
-        }}
-      >
+      ) : !error && emails.length === 0 ? (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3, ease: "easeOut" }}
+          key="empty"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          style={{ 
+            textAlign: "center", 
+            padding: "2rem", 
+            color: "#64748b",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "400px"
+          }}
         >
-          <Mail
-            size={48}
-            style={{ marginBottom: "1rem", color: "#e2e8f0" }}
-          />
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.3, ease: "easeOut" }}
+          >
+            <Mail
+              size={48}
+              style={{ marginBottom: "1rem", color: "#e2e8f0" }}
+            />
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+          >
+            No emails found{" "}
+            {selectedFolder === "all" ? "" : "in this folder"}.
+          </motion.p>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+            style={{ fontSize: "14px", marginTop: "8px" }}
+          >
+            {searchQuery
+              ? "Try a different search term"
+              : selectedFolder === "all"
+              ? 'Click "Sync" to fetch new emails'
+              : "Emails will appear here when categorized"}
+          </motion.p>
         </motion.div>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-        >
-          No emails found{" "}
-          {selectedFolder === "all" ? "" : "in this folder"}.
-        </motion.p>
-        <motion.p 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-          style={{ fontSize: "14px", marginTop: "8px" }}
-        >
-          {searchQuery
-            ? "Try a different search term"
-            : selectedFolder === "all"
-            ? 'Click "Sync" to fetch new emails'
-            : "Emails will appear here when categorized"}
-        </motion.p>
-      </motion.div>
-    );
-  }
-
-  if (!loading && !error && emails.length > 0) {
-    return (
+      ) : !error && emails.length > 0 ? (
       <motion.div
+        key={`email-list-${selectedFolder}-${searchQuery || 'no-search'}-${pagination?.currentPage || 1}`}
         layout
         variants={containerVariants}
         initial="hidden"
@@ -219,7 +215,7 @@ export default function EmailList({
           minHeight: "400px"
         }}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" key={`emails-${selectedFolder}`}>
           {emails.map((email, i) => (
             <motion.div
               key={email._id || i}
@@ -387,8 +383,10 @@ export default function EmailList({
         {/* Load More Button */}
         {pagination && pagination.hasNextPage && !loading && (
           <motion.div 
+            key={`load-more-${selectedFolder}-${pagination.currentPage}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
             style={{
               display: "flex",
@@ -459,6 +457,7 @@ export default function EmailList({
         {/* Loading indicator for Load More */}
         {loading && pagination && pagination.currentPage > 1 && (
           <motion.div 
+            key={`loading-more-${selectedFolder}-${pagination.currentPage}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -492,8 +491,10 @@ export default function EmailList({
         {/* Pagination Info */}
         {pagination && (
           <motion.div 
+            key={`pagination-info-${selectedFolder}-${pagination.currentPage}-${pagination.totalEmails}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
             style={{
               textAlign: "center",
@@ -511,8 +512,7 @@ export default function EmailList({
         )}
         </AnimatePresence>
       </motion.div>
-    );
-  }
-
-  return null;
+      ) : null}
+    </AnimatePresence>
+  );
 }

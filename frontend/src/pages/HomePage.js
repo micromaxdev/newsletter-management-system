@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   Mail,
   Shield,
@@ -409,6 +410,24 @@ export default function HomePage({ handleLogout }) {
               />
               Sync
             </button>
+
+            <Link to="/approval-queue">
+              <button
+                style={{
+                  backgroundColor: "#f59e0b",
+                  color: "white",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Shield size={16} style={{ marginRight: "6px" }} />
+                Approval Queue
+              </button>
+            </Link>
 
             <button
               onClick={handleShowAdmin}
