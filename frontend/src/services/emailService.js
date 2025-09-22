@@ -172,6 +172,25 @@ class EmailService {
       throw error;
     }
   }
+
+  // Fetch all available tags
+  async fetchAllTags() {
+    try {
+      const response = await fetch(`${API_URL}/api/emails/tags`, { 
+        credentials: "include" 
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.tags || [];
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance

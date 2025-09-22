@@ -12,13 +12,18 @@ const useEmails = () => {
   const [pagination, setPagination] = useState(null);
   const [currentFolder, setCurrentFolder] = useState("all");
   const [currentSearch, setCurrentSearch] = useState("");
+  const [currentTag, setCurrentTag] = useState("");
+  const [currentDays, setCurrentDays] = useState("");
 
   // Fetch emails from the server with intelligent caching
   const fetchEmails = useCallback(async (params = {}) => {
-    const { searchQuery = "", folderId = "all", page = 1, limit = 50, forceRefresh = false } = params;
+    const { searchQuery = "", folderId = "all", page = 1, limit = 50, tag = "", days = "", forceRefresh = false } = params;
     
-    // Create cache key
-    const cacheKey = `${folderId}-${searchQuery}-${page}`;
+    console.log('fetchEmails called with params:', params);
+    
+    // Create cache key including all filter parameters
+    const cacheKey = `${folderId}-${searchQuery}-${tag}-${days}-${page}`;
+    
     
     // If we have cached data and not forcing refresh, use it
     if (!forceRefresh && folderCache[cacheKey]) {
@@ -26,6 +31,8 @@ const useEmails = () => {
       setPagination(folderCache[cacheKey].pagination);
       setCurrentFolder(folderId);
       setCurrentSearch(searchQuery);
+      setCurrentTag(tag);
+      setCurrentDays(days);
       return;
     }
 
@@ -36,6 +43,8 @@ const useEmails = () => {
       const data = await emailService.fetchEmails({
         searchQuery: searchQuery.trim() || undefined,
         folderId: folderId !== "all" ? folderId : undefined,
+        tag: tag || undefined,
+        days: days ? parseInt(days) : undefined,
         page,
         limit
       });
@@ -57,8 +66,9 @@ const useEmails = () => {
         setPagination(data.pagination);
         setCurrentFolder(folderId);
         setCurrentSearch(searchQuery);
+        setCurrentTag(tag);
+        setCurrentDays(days);
         
-        console.log("Set pagination:", data.pagination); // Debug log
       } else {
         setDisplayedEmails([]);
         setPagination(null);
@@ -99,12 +109,15 @@ const useEmails = () => {
     
     console.log("Loading more emails. Current pagination:", pagination); // Debug log
     console.log("Current displayed emails count:", displayedEmails.length); // Debug log
+    console.log("Load more with filters:", { currentSearch, currentFolder, currentTag, currentDays }); // Debug log
     
     setLoading(true);
     try {
       const data = await emailService.fetchEmails({
         searchQuery: currentSearch.trim() || undefined,
         folderId: currentFolder !== "all" ? currentFolder : undefined,
+        tag: currentTag || undefined,
+        days: currentDays ? parseInt(currentDays) : undefined,
         page: pagination.currentPage + 1,
         limit: 50
       });
@@ -130,7 +143,7 @@ const useEmails = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination, currentSearch, currentFolder, loading, displayedEmails]);
+  }, [pagination, currentSearch, currentFolder, currentTag, currentDays, loading, displayedEmails]);
 
   // Fetch email counts
   const fetchCounts = useCallback(async () => {

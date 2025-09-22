@@ -121,19 +121,23 @@ export default function HomePage({ handleLogout }) {
         fetchEmails({ 
           searchQuery: searchQuery.trim(),
           folderId: selectedFolder !== "all" ? selectedFolder : undefined,
+          tag: tagFilter || undefined,
+          days: daysFilter ? parseInt(daysFilter) : undefined,
           page: 1
         });
       }, 300);
 
       return () => clearTimeout(timeoutId);
     } else if (searchQuery === "") {
-      // If search is cleared, reload current folder
+      // If search is cleared, reload current folder with active filters
       fetchEmails({ 
         folderId: selectedFolder !== "all" ? selectedFolder : undefined,
+        tag: tagFilter || undefined,
+        days: daysFilter ? parseInt(daysFilter) : undefined,
         page: 1 
       });
     }
-  }, [searchQuery, selectedFolder, fetchEmails]);
+  }, [searchQuery, selectedFolder, tagFilter, daysFilter, fetchEmails]);
 
   // Memoized event handlers to prevent child re-renders
   const handleEmailClick = useCallback((email) => {
@@ -353,8 +357,7 @@ export default function HomePage({ handleLogout }) {
               }}
             >
               <option value="">All time</option>
-              <option value="1">Today</option>
-              <option value="2">Yesterday</option>
+              <option value="1">Yesterday</option>
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
               <option value="90">Last 90 days</option>

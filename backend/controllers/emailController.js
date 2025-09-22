@@ -51,9 +51,9 @@ const getSavedEmails = asyncHandler(async (req, res) => {
     filter.date = { $gte: startDate, $lte: endDate };
   }
 
-  // Tag filter
+  // Tag filter - case insensitive search
   if (tag && typeof tag === 'string' && tag.trim() !== '') {
-    filter.tags = tag.toLowerCase();
+    filter.tags = { $regex: new RegExp(`^${tag.trim()}$`, 'i') };
   }
 
   // Convert to numbers and set reasonable limits
@@ -386,6 +386,33 @@ const updateEmailTags = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: 'Tags updated successfully.', email });
 });
+
+// Get all available tags across all emails
+const getAllTags = asyncHandler(async (req, res) => {
+  try {
+    // Use MongoDB aggregation to get all unique tags
+    const tagData = await Email.aggregate([
+      { $unwind: "$tags" },  // Flatten the tags arrays
+      { $group: { _id: "$tags", count: { $sum: 1 } } },  // Group by tag and count occurrences
+      { $sort: { count: -1, _id: 1 } }  // Sort by count (descending) then alphabetically
+    ]);
+
+    // Extract just the tag names and normalize them
+    const tags = tagData.map(item => item._id.toLowerCase()).filter(tag => tag && tag.trim());
+    
+    res.status(200).json({ 
+      tags: [...new Set(tags)], // Remove any duplicates and return unique tags
+      tagCounts: tagData.reduce((acc, item) => {
+        acc[item._id.toLowerCase()] = item.count;
+        return acc;
+      }, {})
+    });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ message: 'Error fetching available tags', error: error.message });
+  }
+});
+
 // Export all functions
 module.exports = {
   getEmails,
@@ -403,5 +430,6 @@ module.exports = {
   getEmailStatistics,
   validateCategorization,
   tagEmail,
-  updateEmailTags
+  updateEmailTags,
+  getAllTags
 };
