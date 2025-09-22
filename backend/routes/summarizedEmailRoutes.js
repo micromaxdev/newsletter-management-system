@@ -9,4 +9,5 @@ router.get('/:id', summarizedEmailController.getSummarizedEmailById);
 router.put('/:id', summarizedEmailController.updateSummarizedEmail);
 router.delete('/:id', summarizedEmailController.deleteSummarizedEmail);
 
+router.post('/summarize/:emailId', summarizedEmailController.summarizeEmail);
 module.exports = router;

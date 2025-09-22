@@ -1,5 +1,5 @@
 const summarizedEmail = require('../models/summarizedEmailModel');
-
+const {summarizeEmailContent} = require('../services/summarizeEmailService');
 // Create a new summarized email
 const createSummarizedEmail = async (req, res) => {
   try {
@@ -11,17 +11,6 @@ const createSummarizedEmail = async (req, res) => {
     res.status(500).json({ message: 'Error creating summarized email', error });
   }
 };
-
-// Get all summarized emails
-const getAllSummarizedEmails = async (req, res) => {
-  try {
-    const emails = await summarizedEmail.find();
-    res.status(200).json(emails);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching summarized emails', error });
-  }
-};
-
 // Get a single summarized email by ID
 const getSummarizedEmailById = async (req, res) => {
   try {
@@ -32,6 +21,15 @@ const getSummarizedEmailById = async (req, res) => {
     res.status(200).json(email);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching summarized email', error });
+  }
+};
+// Get all summarized emails
+const getAllSummarizedEmails = async (req, res) => {
+  try {
+    const emails = await summarizedEmail.find();
+    res.status(200).json(emails);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching summarized emails', error });
   }
 };
 
@@ -66,10 +64,42 @@ const deleteSummarizedEmail = async (req, res) => {
   }
 };
 
+//summarizing email content
+const summarizeEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    
+    // Extract options from query parameters or request body
+    const options = {
+      temperature: parseFloat(req.query.temperature) || parseFloat(req.body.temperature) || 0.3,
+      topP: parseFloat(req.query.topP) || parseFloat(req.body.topP) || 0.8,
+      topK: parseInt(req.query.topK) || parseInt(req.body.topK) || 40,
+      maxOutputTokens: parseInt(req.query.maxOutputTokens) || parseInt(req.body.maxOutputTokens) || 1000,
+      modelName: req.query.modelName || req.body.modelName || undefined, // Use default if not provided
+    };
+    
+    console.log('Summarizing email with options:', options);
+    
+    const result = await summarizeEmailContent(emailId, options);
+    res.status(200).json({
+      message: 'Email summarized successfully',
+      data: result,
+      options: options
+    });
+  } catch (error) {
+    console.error('Error in summarizeEmail route:', error);
+    res.status(400).json({
+      message: error.message,
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createSummarizedEmail,
   getAllSummarizedEmails,
   getSummarizedEmailById,
   updateSummarizedEmail,
   deleteSummarizedEmail,
+  summarizeEmail
 };      

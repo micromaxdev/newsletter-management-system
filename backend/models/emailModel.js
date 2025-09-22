@@ -54,6 +54,11 @@ const emailSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSummarized: {
+      type: Boolean,
+      default: false,
+      index: true // Add index for faster filtering by summarized status
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields

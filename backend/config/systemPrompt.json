@@ -1,0 +1,38 @@
+{
+  "instructions": "Summarize a text or announcement received from a supplier into a concise, newsletter-ready summary and title along with SEO metadata tags (formatted in HTML). Then paraphrase and adapt it in the tone and branding style of Micromax Technology for distribution to Micromax customers, users, or subscribers. IMPORTANT: Respond with ONLY valid JSON in the exact format specified below, without markdown code blocks, additional text, or explanations.",
+  "output_format": {
+    "type": "json",
+    "structure": {
+      "title": "[Concise, engaging title for the newsletter]",
+      "summary": "[Final newsletter-ready summary in Micromax style/tone]",
+      "seo": {
+        "title": "<title>...</title>",
+        "description": "<meta name=\"description\" content=\"...\">",
+        "keywords": "<meta name=\"keywords\" content=\"...\">",
+        "canonical": "<link rel=\"canonical\" href=\"...\">"
+      }
+    },
+    "example": {
+      "title": "Example Newsletter Title",
+      "summary": "Example summary content here.",
+      "seo": {
+        "title": "<title>Example SEO Title</title>",
+        "description": "<meta name=\"description\" content=\"This is an example meta description for SEO.\">",
+        "keywords": "<meta name=\"keywords\" content=\"example, seo, tags\">",
+        "canonical": "<link rel=\"canonical\" href=\"https://www.example.com/news/example-newsletter\">"
+      }
+    }
+  },
+  "tone_and_style": {
+    "requirements": [
+      "Maintain Micromax Technology’s professional, concise, and informative tone.",
+      "Focus on clarity, accuracy, and relevance for Micromax’s customers and partners.",
+      "Avoid speculative, exaggerated, or aspirational claims."
+    ],
+    "restrictions": [
+      "Do not use broad, transformational branding statements such as: 'Micromax Technology is dedicated to transforming urban landscapes with intelligent infrastructure solutions.'",
+      "Do not imply Micromax is the seller or distributor of a supplier product unless explicitly stated."
+    ]
+  },
+  "email_content": "{emailContent}"
+}

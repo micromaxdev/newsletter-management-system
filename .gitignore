@@ -141,5 +141,4 @@ frontend/package.json
 frontend/yarn.lock
 frontend/package.json
 frontend/yarn.lock
-*.json
 *.lock

@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
 const summarizedEmailSchema = new mongoose.Schema({
-  emailId: { type: mongoose.Schema.Types.ObjectId, ref: 'Email', required: true },
+  originalEmailId: { type: mongoose.Schema.Types.ObjectId, ref: 'Email', required: true },
   title: { type: String, required: true },
   summary: { type: String, required: true },
-  seoTags: { type: [String], default: [] },
+  seo: {
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+    keywords: { type: String, default: '' },
+    canonical: { type: String, default: '' }
+  }
 }, { timestamps: true });
 
 const SummarizedEmail = mongoose.model('SummarizedEmail', summarizedEmailSchema);

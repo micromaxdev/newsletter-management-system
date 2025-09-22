@@ -16,7 +16,7 @@ const { syncEmailsFromPOP3 } = require("./services/emailSyncService");
 const emailRoutes = require("./routes/emailRoutes");
 const folderRoutes = require("./routes/folderRoutes");
 const userRoutes = require("./routes/userRoutes");
-
+const summarizedEmailRoutes = require("./routes/summarizedEmailRoutes");
 const app = express();
 const server = http.createServer(app);
 
@@ -48,7 +48,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api/emails", emailRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/users", userRoutes);
-
+app.use("/api/summarized-emails", summarizedEmailRoutes);
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")));
@@ -65,6 +65,11 @@ if (process.env.NODE_ENV === "production") {
 
 const PORT = process.env.PORT || 5007;
 
+// Run initial email sync when server starts
+//console.log('[SYSTEM] Running initial email sync on server startup...');
+//syncEmailsFromPOP3().catch(error => {
+  //  console.error('[SYSTEM] Error during initial email sync:', error);
+//});
 
 // Schedule email cleanup to run once a day at midnight.
 cron.schedule('0 0 * * *', () => {
