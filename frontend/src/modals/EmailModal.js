@@ -10,6 +10,8 @@ import {
   Plus,
 } from "lucide-react";
 import DOMPurify from "dompurify";
+import SummaryModal from "./SummaryModal";
+import { useSummarization } from "../hooks/useSummarization";
 
 export default function EmailModal({
   email,
@@ -23,6 +25,17 @@ export default function EmailModal({
 }) {
   const [editingTags, setEditingTags] = useState(false);
   const [tempTags, setTempTags] = useState([]);
+  
+  // Use the custom summarization hook
+  const {
+    isGenerating: isGeneratingSummary,
+    summaryResult,
+    showSummaryModal,
+    error: summaryError,
+    generateSummary,
+    closeSummaryModal,
+    clearError
+  } = useSummarization();
 
   if (!email) return null;
 
@@ -57,6 +70,22 @@ export default function EmailModal({
 
   const handleRemoveTag = (tagToRemove) => {
     setTempTags(tempTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleSummarizeEmail = async () => {
+    if (!email._id) return;
+    
+    // Let the backend handle default configuration
+    // Only pass options if you want to override backend defaults
+    const options = null; // or specify custom options like { temperature: 0.2 }
+    
+    await generateSummary(email._id, options);
+    
+    // Handle error display (you can customize this)
+    if (summaryError) {
+      alert(`Failed to generate summary: ${summaryError}`);
+      clearError();
+    }
   };
 
   const formatDate = (dateString) => {
@@ -284,16 +313,23 @@ export default function EmailModal({
           </p>
         </div>
 
-        {/* Tags Section */}
-        <div
-          style={{
-            marginBottom: "1.5rem",
-            padding: "1rem",
-            backgroundColor: "#f8fafc",
-            borderRadius: "8px",
-            border: "1px solid #e2e8f0",
-          }}
-        >
+        {/* Tags and Summary Section - Side by Side */}
+        <div style={{ 
+          display: "flex", 
+          gap: "1rem", 
+          marginBottom: "1.5rem",
+          alignItems: "flex-start"
+        }}>
+          {/* Tags Section */}
+          <div
+            style={{
+              flex: 1,
+              padding: "1rem",
+              backgroundColor: "#f8fafc",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
           <div style={{ 
             display: "flex", 
             alignItems: "center", 
@@ -383,6 +419,7 @@ export default function EmailModal({
                   }}
                 />
               </div>
+              {/* End of Summary button section */}
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button
                   onClick={handleSaveTags}
@@ -456,6 +493,38 @@ export default function EmailModal({
           )}
         </div>
 
+          {/* Summary Button - Beside Tags */}
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: "0.5rem"
+          }}>
+            <button
+              onClick={() => handleSummarizeEmail()}
+              disabled={isGeneratingSummary}
+              style={{
+                backgroundColor: isGeneratingSummary ? "#9ca3af" : "#f59e0b",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: isGeneratingSummary ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                transition: "all 0.2s ease",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {isGeneratingSummary ? "⏳ Generating..." : "✨ Generate AI Summary"}
+            </button>
+          </div>
+        </div>
+
         {/* Email Content */}
         <div
           style={{
@@ -496,6 +565,14 @@ export default function EmailModal({
           )}
         </div>
       </div>
+
+      {/* Summary Modal */}
+      {showSummaryModal && summaryResult && (
+        <SummaryModal 
+          summaryData={summaryResult}
+          onClose={closeSummaryModal}
+        />
+      )}
     </div>
   );
 }

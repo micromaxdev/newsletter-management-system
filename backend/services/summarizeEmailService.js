@@ -44,8 +44,6 @@ const generateSummaryWithGemini = async (content, options = {}) => {
     if (topK !== undefined) generationConfig.topK = topK;
     if (maxOutputTokens !== undefined) generationConfig.maxOutputTokens = maxOutputTokens;
 
-    console.log('Using generation config:', generationConfig);
-
     const geminiModel = getGeminiModel(modelName || "gemini-2.0-flash", generationConfig);
     if (!geminiModel) {
         throw new Error('Gemini model not initialized');

@@ -3,8 +3,8 @@ const {summarizeEmailContent} = require('../services/summarizeEmailService');
 // Create a new summarized email
 const createSummarizedEmail = async (req, res) => {
   try {
-    const { emailId, title, summary, seoTags } = req.body;
-    const newSummarizedEmail = new summarizedEmail({ emailId, title, summary, seoTags });
+    const { emailId, title, summary, seo } = req.body;
+    const newSummarizedEmail = new summarizedEmail({ emailId, title, summary, seo });
     const savedEmail = await newSummarizedEmail.save();
     res.status(201).json(savedEmail);
   } catch (error) {
@@ -64,7 +64,7 @@ const deleteSummarizedEmail = async (req, res) => {
   }
 };
 
-//summarizing email content
+//summarizing email content using Gemini
 const summarizeEmail = async (req, res) => {
   try {
     const { emailId } = req.params;
