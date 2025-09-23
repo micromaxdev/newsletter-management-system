@@ -26,6 +26,7 @@ export default function EmailModal({
 }) {
   const [editingTags, setEditingTags] = useState(false);
   const [tempTags, setTempTags] = useState([]);
+  const [currentEmail, setCurrentEmail] = useState(email); // Local state for email to update UI
   
   // Use the custom summarization hook
   const {
@@ -38,7 +39,12 @@ export default function EmailModal({
     clearError
   } = useSummarization();
 
-  if (!email) return null;
+  // Update currentEmail when email prop changes
+  React.useEffect(() => {
+    setCurrentEmail(email);
+  }, [email]);
+
+  if (!currentEmail) return null;
 
   const getTagColor = (tag) => {
     return "#64748b"; // default gray
@@ -46,12 +52,17 @@ export default function EmailModal({
 
   const handleEditTags = () => {
     setEditingTags(true);
-    setTempTags([...(email.tags || [])]);
+    setTempTags([...(currentEmail.tags || [])]);
   };
 
   const handleSaveTags = async () => {
     try {
-      await onUpdateTags(email._id, tempTags);
+      await onUpdateTags(currentEmail._id, tempTags);
+      // Update the local email state with the new tags
+      setCurrentEmail(prevEmail => ({
+        ...prevEmail,
+        tags: [...tempTags]
+      }));
       setEditingTags(false);
     } catch (error) {
       console.error("Error updating tags:", error);
@@ -128,8 +139,8 @@ export default function EmailModal({
     }
   };
 
-  const sanitizedHTML = email.html
-    ? DOMPurify.sanitize(email.html, { ADD_ATTR: ["target"] })
+  const sanitizedHTML = currentEmail.html
+    ? DOMPurify.sanitize(currentEmail.html, { ADD_ATTR: ["target"] })
     : "";
 
   return (
@@ -181,7 +192,7 @@ export default function EmailModal({
               whiteSpace: "nowrap",
             }}
           >
-            {email.subject || "(No Subject)"}
+            {currentEmail.subject || "(No Subject)"}
           </h2>
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             {type === "email" && (
@@ -226,7 +237,7 @@ export default function EmailModal({
 
                 {/* Move Folder Dropdown */}
                 <select
-                  value={email.folderId || "inbox"}
+                  value={currentEmail.folderId || "inbox"}
                   onChange={(e) => onMoveEmail(email._id, e.target.value)}
                   style={{
                     fontSize: "14px",
@@ -288,7 +299,7 @@ export default function EmailModal({
             }}
           >
             <User size={16} style={{ marginRight: "6px" }} />
-            <strong>From:</strong> {formatSender(email.from)}
+            <strong>From:</strong> {formatSender(currentEmail.from)}
           </p>
           <p
             style={{
@@ -299,7 +310,7 @@ export default function EmailModal({
             }}
           >
             <Calendar size={16} style={{ marginRight: "6px" }} />
-            <strong>Date:</strong> {email.date ? formatDate(email.date) : "N/A"}
+            <strong>Date:</strong> {currentEmail.date ? formatDate(currentEmail.date) : "N/A"}
           </p>
           <p
             style={{
@@ -311,8 +322,8 @@ export default function EmailModal({
           >
             <Folder size={16} style={{ marginRight: "6px" }} />
             <strong>Folder:</strong>{" "}
-            {folderConfig.find((f) => f.id === email.folderId)?.name ||
-              email.folderId ||
+            {folderConfig.find((f) => f.id === currentEmail.folderId)?.name ||
+              currentEmail.folderId ||
               "Unknown"}
           </p>
         </div>
@@ -420,7 +431,15 @@ export default function EmailModal({
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim() && tempTags.length < 2) {
-                      handleAddTag(e.target.value.trim().toLowerCase());
+                      let value = e.target.value.trim();
+
+                      if (value.length === 2) {
+                        value = value.toUpperCase();
+                      } else if (value.length > 2) {
+                        value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                      }
+
+                      handleAddTag(value);
                       e.target.value = '';
                     }
                   }}
@@ -465,8 +484,8 @@ export default function EmailModal({
               gap: "0.5rem",
               minHeight: "24px"
             }}>
-              {email.tags && email.tags.length > 0 ? (
-                email.tags.map((tag, index) => {
+              {currentEmail.tags && currentEmail.tags.length > 0 ? (
+                currentEmail.tags.map((tag, index) => {
                   let displayTag = tag;
                   if (tag.length === 2) displayTag = tag.toUpperCase();
                   else displayTag = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
