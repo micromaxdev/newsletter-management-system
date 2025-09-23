@@ -11,6 +11,35 @@ const createSummarizedEmail = async (req, res) => {
     res.status(500).json({ message: 'Error creating summarized email', error });
   }
 };
+const getEmailByQuery = async (req, res) => {
+  try {
+      // Clone query object
+      let queryObj = { ...req.query };
+
+      // Convert string "true"/"false" → boolean
+      if (queryObj.isApproved !== undefined) {
+        queryObj.isApproved = queryObj.isApproved === "true";
+      }
+
+      // Allow MongoDB operators like $gte, $lte, etc. in query
+      let queryStr = JSON.stringify(queryObj);
+      queryStr = queryStr.replace(
+        /\b(gte|gt|lte|lt|in|ne|nin|regex)\b/g,
+        (match) => `$${match}`
+      );
+
+      const filter = JSON.parse(queryStr);
+
+      const emails = await summarizedEmail.find(filter).sort({ createdAt: -1 });
+
+      res.status(200).json(emails);
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error fetching summarized emails", error });
+    }
+    
+};
 // Get a single summarized email by ID
 const getSummarizedEmailById = async (req, res) => {
   try {
@@ -94,6 +123,7 @@ const summarizeEmail = async (req, res) => {
     });
   }
 };
+// Update summarized email approval status
 const updateSummarizedEmailStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -118,5 +148,6 @@ module.exports = {
   updateSummarizedEmail,
   deleteSummarizedEmail,
   summarizeEmail,
-  updateSummarizedEmailStatus
+  updateSummarizedEmailStatus,
+  getEmailByQuery
 };      
