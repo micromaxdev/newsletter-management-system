@@ -97,7 +97,15 @@ const markEmailAsSummarized = async (existingEmail) => {
     existingEmail.isSummarized = true;
     await existingEmail.save();
 };
-
+const setApprovalStatus = async (emailId, isApproved) => {
+    const summarizedEmailDoc = await SummarizedEmail.findById(emailId);
+    if (!summarizedEmailDoc) {
+        throw new Error('Summarized email not found');
+    }
+    summarizedEmailDoc.isApproved = isApproved;
+    await summarizedEmailDoc.save();
+    return summarizedEmailDoc;
+};
 const saveSummarizedEmail = async (emailId, summarizedResult) => {
     const existingSummarizedEmail = await SummarizedEmail.findOneAndUpdate(
         { originalEmailId: emailId },
@@ -125,8 +133,8 @@ const summarizeEmailContent = async (emailId, options = {}) => {
       const summarizedResult = parseAndValidateSummary(text);
 
       await markEmailAsSummarized(existingEmail);
-      
       const summarizedEmailDoc = await saveSummarizedEmail(emailId, summarizedResult);
+      await setApprovalStatus(summarizedEmailDoc._id, false); // re-mark as not approved upon re-summarization
       
       // Return the summarized contents
       return summarizedEmailDoc;
@@ -144,5 +152,6 @@ module.exports = {
     markEmailAsSummarized,
     saveSummarizedEmail,
     summarizeEmailContent,
+    setApprovalStatus,
 };
 ``

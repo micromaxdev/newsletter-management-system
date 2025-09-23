@@ -1,5 +1,5 @@
 const summarizedEmail = require('../models/summarizedEmailModel');
-const {summarizeEmailContent} = require('../services/summarizeEmailService');
+const {summarizeEmailContent, setApprovalStatus} = require('../services/summarizeEmailService');
 // Create a new summarized email
 const createSummarizedEmail = async (req, res) => {
   try {
@@ -101,9 +101,8 @@ const approveSummarizedEmail = async (req, res) => {
     if (!email) {
       return res.status(404).json({ message: 'Summarized email not found' });
     }
-    email.isApproved = true;
-    await email.save();
-    res.status(200).json({ message: 'Summarized email approved', email });
+    const approvedEmail = await setApprovalStatus(id, true);
+    res.status(200).json({ message: 'Summarized email approved', email: approvedEmail });
   } catch (error) {
     res.status(500).json({ message: 'Error approving summarized email', error });
   }
