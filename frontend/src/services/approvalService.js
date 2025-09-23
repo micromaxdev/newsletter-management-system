@@ -7,6 +7,25 @@ const getSummarizedEmails = async () => {
   return response.data;
 };
 
+const querySummarizedEmails = async (queryParams = {}) => {
+  const params = new URLSearchParams();
+  
+  if (queryParams.searchQuery) {
+    params.append('q', queryParams.searchQuery);
+  }
+  if (queryParams.isApproved !== undefined) {
+    params.append('isApproved', queryParams.isApproved);
+  }
+  
+  const queryString = params.toString();
+  const url = queryString ? 
+    `${API_URL}/api/summarized-emails/query?${queryString}` : 
+    `${API_URL}/api/summarized-emails`;
+    
+  const response = await axios.get(url);
+  return response.data;
+};
+
 const approvalEmailSummary = async (summaryId, status) => {
   const response = await axios.put(
     `${API_URL}/api/summarized-emails/approval/${summaryId}`,
@@ -28,6 +47,7 @@ const rejectEmailSummary = async (summaryId) => {
 } 
 const approvalService = {
   getSummarizedEmails,
+  querySummarizedEmails,
   approvalEmailSummary,
   rejectEmailSummary,
 };
