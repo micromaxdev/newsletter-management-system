@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import EmailModal from "./EmailModal";
 import approvalService from "../services/approvalService";
-import ConfirmationModal from "./confirmationModal";
+import ConfirmationModal from "./ConfirmationModal";
 
 // Summary Modal Component
 function SummaryModal({ summaryData, onClose, type }) {
@@ -10,6 +10,7 @@ function SummaryModal({ summaryData, onClose, type }) {
   const [showOriginalEmailModal, setShowOriginalEmailModal] = useState(false);
   const [showRejectConfirmation, setShowRejectConfirmation] = useState(false);
   const [showApprovalConfirmation, setShowApprovalConfirmation] = useState(false);
+  const [showApprovalCancelConfirmation, setShowApprovalCancelConfirmation] = useState(false);
   const handleViewOriginalEmail = () => {
     // Check if original email data is available
     if (data.email && data.email.originalEmail) {
@@ -28,7 +29,7 @@ function SummaryModal({ summaryData, onClose, type }) {
     setShowOriginalEmailModal(false);
   };
   const handleApproval = () => {
-    approvalService.approveEmailSummary(data.id)
+    approvalService.approvalEmailSummary(data.id, true)
       .then((res) => {
         console.log("Approval successful:", res);
         window.location.reload(); // Refresh the page to reflect changes
@@ -52,6 +53,18 @@ const handleRejection = () => {
       });
   }; 
 
+const handleApprovalCancel = () => {
+    approvalService.approvalEmailSummary(data.id, false)
+      .then((res) => {
+        console.log("Approval cancellation successful:", res);
+        window.location.reload(); // Refresh the page to reflect changes
+        onClose(); // Close the summary modal after cancellation
+      })
+      .catch((err) => {
+        console.error("Approval cancellation failed:", err);
+        alert("Failed to cancel the approval. Please try again.");
+      });
+  };
   const handleConfirmRejection = () => {
     handleRejection();
     setShowRejectConfirmation(false);
@@ -191,6 +204,23 @@ const handleRejection = () => {
                       Reject
                     </button>
                     </>
+                  )}
+                  {data.status === "approved" && (
+                  <> 
+                    <button
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setShowApprovalCancelConfirmation(true)} // Show confirmation modal
+                    >
+                      Cancel Approval
+                    </button>
+                  </>
                   )}
                 </div>
             )}
@@ -340,60 +370,6 @@ const handleRejection = () => {
               </div>
             </div>
           )}
-
-          {/* Generation Options */}
-          {/* {options && (
-            <div style={{ marginBottom: "1rem" }}>
-              <h3 style={{ fontSize: "1rem", color: "#374151", marginBottom: "0.5rem" }}>
-                ⚙️ Generation Settings
-              </h3>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                  gap: "0.5rem",
-                  padding: "0.75rem",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                {options.temperature !== undefined && (
-                  <div>
-                    <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>Temperature:</span>
-                    <span style={{ fontSize: "0.9rem", color: "#374151", fontWeight: "600", marginLeft: "0.25rem" }}>
-                      {options.temperature}
-                    </span>
-                  </div>
-                )}
-                {options.topP !== undefined && (
-                  <div>
-                    <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>Top P:</span>
-                    <span style={{ fontSize: "0.9rem", color: "#374151", fontWeight: "600", marginLeft: "0.25rem" }}>
-                      {options.topP}
-                    </span>
-                  </div>
-                )}
-                {options.topK !== undefined && (
-                  <div>
-                    <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>Top K:</span>
-                    <span style={{ fontSize: "0.9rem", color: "#374151", fontWeight: "600", marginLeft: "0.25rem" }}>
-                      {options.topK}
-                    </span>
-                  </div>
-                )}
-                {options.maxOutputTokens !== undefined && (
-                  <div>
-                    <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>Max Tokens:</span>
-                    <span style={{ fontSize: "0.9rem", color: "#374151", fontWeight: "600", marginLeft: "0.25rem" }}>
-                      {options.maxOutputTokens}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )} */}
-
           {/* Metadata */}
           <div style={{ fontSize: "0.8rem", color: "#6b7280", textAlign: "center" }}>
             Generated on {new Date(data.createdAt).toLocaleString()}
@@ -425,7 +401,18 @@ const handleRejection = () => {
           handleCancellation={handleCancelApproval}
         />
       )}
-
+      {/* Approval Cancellation Confirmation Modal */}
+      {showApprovalCancelConfirmation && (
+        <ConfirmationModal
+          data={data}
+          title="Confirm Approval Cancellation"
+          message="Are you sure you want to cancel the approval of this summary?"
+          highlightText="This action will revert its status back to pending."
+          confirmColor="#ef4444"
+          handleConfirmation={handleApprovalCancel}
+          handleCancellation={() => setShowApprovalCancelConfirmation(false)}
+        />
+      )}  
       {/* Original Email Modal */}
       {showOriginalEmailModal && data.email && data.email.originalEmail && (
         <EmailModal

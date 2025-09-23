@@ -7,8 +7,18 @@ const getSummarizedEmails = async () => {
   return response.data;
 };
 
-const approveEmailSummary = async (summaryId) => {
-  const response = await axios.put(`${API_URL}/api/summarized-emails/approve/${summaryId}`);
+const approvalEmailSummary = async (summaryId, status) => {
+  const response = await axios.put(
+    `${API_URL}/api/summarized-emails/approval/${summaryId}`,
+    {
+      status: status
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
   return response.data;
 }
 
@@ -18,7 +28,7 @@ const rejectEmailSummary = async (summaryId) => {
 } 
 const approvalService = {
   getSummarizedEmails,
-  approveEmailSummary,
+  approvalEmailSummary,
   rejectEmailSummary,
 };
 

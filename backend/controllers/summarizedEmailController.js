@@ -94,14 +94,18 @@ const summarizeEmail = async (req, res) => {
     });
   }
 };
-const approveSummarizedEmail = async (req, res) => {
+const updateSummarizedEmailStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const {status} = req.body;
+    if (status === undefined || typeof status !== "boolean") {
+      return res.status(400).json({ message: 'Approval status invalid' });
+    }
     const email = await summarizedEmail.findById(id);
     if (!email) {
       return res.status(404).json({ message: 'Summarized email not found' });
     }
-    const approvedEmail = await setApprovalStatus(id, true);
+    const approvedEmail = await setApprovalStatus(id, status);
     res.status(200).json({ message: 'Summarized email approved', email: approvedEmail });
   } catch (error) {
     res.status(500).json({ message: 'Error approving summarized email', error });
@@ -114,5 +118,5 @@ module.exports = {
   updateSummarizedEmail,
   deleteSummarizedEmail,
   summarizeEmail,
-  approveSummarizedEmail
+  updateSummarizedEmailStatus
 };      

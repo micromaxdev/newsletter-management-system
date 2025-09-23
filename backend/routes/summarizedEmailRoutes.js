@@ -7,7 +7,7 @@ router.post('/', summarizedEmailController.createSummarizedEmail);
 router.get('/', summarizedEmailController.getAllSummarizedEmails);
 router.get('/:id', summarizedEmailController.getSummarizedEmailById);
 router.put('/:id', summarizedEmailController.updateSummarizedEmail);
-router.put('/approve/:id', summarizedEmailController.approveSummarizedEmail);
+router.put('/approval/:id', summarizedEmailController.updateSummarizedEmailStatus);
 router.delete('/:id', summarizedEmailController.deleteSummarizedEmail);
 
 router.post('/summarize/:emailId', summarizedEmailController.summarizeEmail);

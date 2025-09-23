@@ -9,6 +9,7 @@ import emailService from '../services/emailService';
 
 const ApprovalQueue = () => {
   const [summarizedEmails, setSummarizedEmails] = useState([]);
+  const [approvedCount, setApprovedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEmailForSummary, setSelectedEmailForSummary] = useState(null);
@@ -24,11 +25,10 @@ const ApprovalQueue = () => {
     try {
       setLoading(true);
       const data = await approvalService.getSummarizedEmails();
-      
+      let currentApprovedCount = 0;
       // Transform the summarized email data to match EmailList expected format
       const transformedEmails = await Promise.all(data.map(async (email) => {
         let originalEmail = null;
-        
         // Try to fetch the original email if originalEmailId exists
         try {
           if (email.originalEmailId && email.originalEmailId.length === 24) { // Valid MongoDB ObjectId length
@@ -41,7 +41,9 @@ const ApprovalQueue = () => {
           console.warn(`Could not fetch original email for ${email._id}:`, emailError.message);
           // Continue without the original email data
         }
-        
+        if (email.isApproved) {
+          currentApprovedCount++;
+        }
         return {
           // Use the existing fields from summarized email
           _id: email._id,
@@ -72,6 +74,7 @@ const ApprovalQueue = () => {
         };
       }));
       console.log("Transformed summarized emails:", transformedEmails);
+      setApprovedCount(currentApprovedCount); 
       setSummarizedEmails(transformedEmails);
     } catch (err) {
       setError(err.message);
@@ -190,7 +193,7 @@ const ApprovalQueue = () => {
               margin: "0.25rem 0 0 0", 
               fontSize: "14px" 
             }}>
-              Review and approve summarized emails ({summarizedEmails.length} pending)
+              Review and approve summarized emails ({summarizedEmails.length - approvedCount} pending)
             </p>
           </div>
         </div>
