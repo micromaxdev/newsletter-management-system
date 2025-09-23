@@ -21,6 +21,15 @@ const getEmails = asyncHandler(async (req, res) => {
   });
 });
 
+const getSavedEmailById = asyncHandler(async (req, res) => {
+  const { emailId } = req.params;
+  const email = await Email.findById(emailId);
+  if (!email) {
+    return res.status(404).json({ message: 'Email not found' });
+  }
+  res.status(200).json({ email });
+});
+
 const getSavedEmails = asyncHandler(async (req, res) => {
   const { folderId, q, page = 1, limit = 50, days, tag } = req.query; // Added days and tag filters
   const filter = {};
@@ -431,5 +440,6 @@ module.exports = {
   validateCategorization,
   tagEmail,
   updateEmailTags,
-  getAllTags
+  getAllTags,
+  getSavedEmailById
 };

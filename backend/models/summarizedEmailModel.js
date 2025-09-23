@@ -9,7 +9,8 @@ const summarizedEmailSchema = new mongoose.Schema({
     description: { type: String, default: '' },
     keywords: { type: String, default: '' },
     canonical: { type: String, default: '' }
-  }
+  },
+  isApproved: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const SummarizedEmail = mongoose.model('SummarizedEmail', summarizedEmailSchema);

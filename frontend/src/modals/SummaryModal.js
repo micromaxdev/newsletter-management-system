@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 
 // Summary Modal Component
 function SummaryModal({ summaryData, onClose }) {
-  const { data, options } = summaryData;
+  const { data } = summaryData;
 
   return (
     <div

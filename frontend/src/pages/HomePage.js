@@ -178,16 +178,11 @@ export default function HomePage({ handleLogout }) {
     await syncEmails();
   }, [syncEmails]);
 
-  // Compute effective pagination - hide load more when local filters are active
-  // and we're showing all fetched emails (even if server has more pages)
+  // Compute effective pagination 
   const effectivePagination = useMemo(() => {
     if (!pagination) return null;
     
-    // If local filters are active, we need to check if we should show load more
     if (hasActiveFilters) {
-      // If filtered emails length equals displayed emails length, 
-      // it means we're showing all available emails after filtering
-      // In this case, don't show load more even if server has more pages
       return {
         ...pagination,
         hasNextPage: filteredEmails.length === displayedEmails.length && pagination.hasNextPage
@@ -411,24 +406,6 @@ export default function HomePage({ handleLogout }) {
               Sync
             </button>
 
-            <Link to="/approval-queue">
-              <button
-                style={{
-                  backgroundColor: "#f59e0b",
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Shield size={16} style={{ marginRight: "6px" }} />
-                Approval Queue
-              </button>
-            </Link>
-
             <button
               onClick={handleShowAdmin}
               style={{
@@ -490,6 +467,25 @@ export default function HomePage({ handleLogout }) {
             onFolderSelect={setSelectedFolder}
             unreadCounts={unreadCounts}
           />
+          <Link to="/approval-queue">
+              <button
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  padding: "1rem",
+                  marginTop: "1rem",
+                  border: "none",
+                  cursor: "pointer",
+                  width: "300px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Shield size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
+                Approval Queue
+              </button>
+            </Link>
         </aside>
 
         {/* Email List Content */}

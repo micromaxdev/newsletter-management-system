@@ -22,7 +22,8 @@ const {
   validateCategorization,
   tagEmail,
   updateEmailTags,
-  getAllTags
+  getAllTags,
+  getSavedEmailById
 } = require('../controllers/emailController');
 
 // Protect all routes in this file
@@ -44,6 +45,12 @@ router.get('/unread-counts', asyncHandler(getUnreadCounts));
 
 // Get email counts per folder (includes unread counts for each)
 router.get('/counts', asyncHandler(getEmailCounts));
+
+// Get all available tags
+router.get('/tags', asyncHandler(getAllTags));
+
+// This parameterized route MUST come after all specific routes
+router.get('/:emailId', asyncHandler(getSavedEmailById));
 
 // Mark email as read
 router.put('/:emailId/read', asyncHandler(markEmailAsRead));
@@ -78,8 +85,6 @@ router.get('/tag/:emailId', asyncHandler(tagEmail));
 // Update email tags
 router.put('/tag/:emailId', asyncHandler(updateEmailTags));
 
-// Get all available tags
-router.get('/tags', asyncHandler(getAllTags));
 
 // Error handling middleware (still useful here for route-specific errors)
 router.use((error, req, res, next) => {

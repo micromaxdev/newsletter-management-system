@@ -82,6 +82,25 @@ class EmailService {
     }
   }
 
+  // Fetch a single saved email by ID
+  async fetchEmailById(emailId) {
+    try {
+      const response = await fetch(`${API_URL}/api/emails/${emailId}`, { 
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || response.statusText);
+      }
+      return await response.json();
+    }  catch (error) {
+      console.error("Error fetching email by ID:", error);
+      throw error;
+    }
+  }
   // Mark email as read
   async markEmailAsRead(emailId) {
     try {
@@ -192,6 +211,7 @@ class EmailService {
     }
   }
 }
+
 
 // Export a singleton instance
 const emailService = new EmailService();

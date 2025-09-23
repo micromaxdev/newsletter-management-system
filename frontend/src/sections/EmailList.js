@@ -8,6 +8,7 @@ import {
   Folder,
   ChevronRight,
   Tag,
+  FileText,
 } from "lucide-react";
 
 export default function EmailList({
@@ -69,7 +70,19 @@ export default function EmailList({
   };
 
   const getTagColor = (tag) => {
-    return "#64748b"; // default gray
+    const tagColors = {
+      'summary': '#10b981',
+      'pending-approval': '#f59e0b',
+      'approved': '#3b82f6',
+      'rejected': '#ef4444',
+      'urgent': '#dc2626',
+      'important': '#7c3aed',
+      'newsletter': '#06b6d4',
+      'promotion': '#ec4899',
+      'invoice': '#f97316',
+      'support': '#14b8a6'
+    };
+    return tagColors[tag.toLowerCase()] || "#64748b"; // default gray
   };
 
   const renderTags = (tags) => {
@@ -268,23 +281,47 @@ export default function EmailList({
               }}
             >
               <div style={{ width: "calc(100% - 32px)", minWidth: 0, border: "none", outline: "none", boxShadow: "none" }}>
-                <h3
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: email.isRead ? "500" : "600",
-                    color: "#1e293b",
-                    margin: "0 0 8px 0",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: "100%",
-                    lineHeight: "1.4",
-                    border: "none",
-                    outline: "none",
-                  }}
-                >
-                  {email.subject || "(No Subject)"}
-                </h3>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "0.5rem",
+                  marginBottom: "8px"
+                }}>
+                  <h3
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: email.isRead ? "500" : "600",
+                      color: "#1e293b",
+                      margin: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                      lineHeight: "1.4",
+                      border: "none",
+                      outline: "none",
+                    }}
+                  >
+                    {email.subject || "(No Subject)"}
+                  </h3>
+                  {email.hasSummary && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem",
+                      padding: "2px 6px",
+                      backgroundColor: "#10b981",
+                      color: "white",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: "500",
+                      flexShrink: 0
+                    }}>
+                      <FileText size={10} />
+                      SUMMARY
+                    </div>
+                  )}
+                </div>
                 <div
                   style={{
                     display: "flex",

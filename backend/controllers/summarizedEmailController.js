@@ -94,12 +94,26 @@ const summarizeEmail = async (req, res) => {
     });
   }
 };
-
+const approveSummarizedEmail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const email = await summarizedEmail.findById(id);
+    if (!email) {
+      return res.status(404).json({ message: 'Summarized email not found' });
+    }
+    email.isApproved = true;
+    await email.save();
+    res.status(200).json({ message: 'Summarized email approved', email });
+  } catch (error) {
+    res.status(500).json({ message: 'Error approving summarized email', error });
+  }
+};
 module.exports = {
   createSummarizedEmail,
   getAllSummarizedEmails,
   getSummarizedEmailById,
   updateSummarizedEmail,
   deleteSummarizedEmail,
-  summarizeEmail
+  summarizeEmail,
+  approveSummarizedEmail
 };      
