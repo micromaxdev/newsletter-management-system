@@ -71,7 +71,7 @@ const ApprovalQueue = () => {
           originalEmail: originalEmail
         };
       }));
-      
+      console.log("Transformed summarized emails:", transformedEmails);
       setSummarizedEmails(transformedEmails);
     } catch (err) {
       setError(err.message);
@@ -88,6 +88,7 @@ const ApprovalQueue = () => {
     // When clicking on an email in the approval queue, open the summary modal
     const summaryData = {
       data: {
+        id: email._id,
         summary: email.summary,
         title: email.title,
         email: email,
@@ -226,6 +227,7 @@ const ApprovalQueue = () => {
       {selectedEmailForSummary && (
         <SummaryModal
           summaryData={selectedEmailForSummary}
+          type={"summary"}
           onClose={handleCloseSummaryModal}
         />
       )}

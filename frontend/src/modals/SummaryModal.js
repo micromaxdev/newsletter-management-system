@@ -1,9 +1,77 @@
-import React from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
+import EmailModal from "./EmailModal";
+import approvalService from "../services/approvalService";
+import ConfirmationModal from "./confirmationModal";
 
 // Summary Modal Component
-function SummaryModal({ summaryData, onClose }) {
+function SummaryModal({ summaryData, onClose, type }) {
   const { data } = summaryData;
+  const [showOriginalEmailModal, setShowOriginalEmailModal] = useState(false);
+  const [showRejectConfirmation, setShowRejectConfirmation] = useState(false);
+  const [showApprovalConfirmation, setShowApprovalConfirmation] = useState(false);
+  const handleViewOriginalEmail = () => {
+    // Check if original email data is available
+    if (data.email && data.email.originalEmail) {
+      setShowOriginalEmailModal(true);
+    } else if (data.email && data.email.originalEmailId) {
+      // If we have an originalEmailId but no original email data, it means fetching failed
+      alert("Original email could not be loaded. This may be due to the email being deleted or a connection issue.");
+    } else {
+      // No original email reference at all
+      console.warn("Original email data not available");
+      alert("No original email is associated with this summary.");
+    }
+  };
+
+  const handleCloseOriginalEmailModal = () => {
+    setShowOriginalEmailModal(false);
+  };
+  const handleApproval = () => {
+    approvalService.approveEmailSummary(data.id)
+      .then((res) => {
+        console.log("Approval successful:", res);
+        window.location.reload(); // Refresh the page to reflect changes
+        onClose(); // Close the summary modal after approval
+      })
+      .catch((err) => {
+        console.error("Approval failed:", err);
+        alert("Failed to approve the summary. Please try again.");
+      });
+  };
+const handleRejection = () => {
+    approvalService.rejectEmailSummary(data.id)
+      .then((res) => {
+        console.log("Rejection successful:", res);
+        window.location.reload(); // Refresh the page to reflect changes
+        onClose(); // Close the summary modal after rejection
+      })
+      .catch((err) => {
+        console.error("Rejection failed:", err);
+        alert("Failed to reject the summary. Please try again.");
+      });
+  }; 
+
+  const handleConfirmRejection = () => {
+    handleRejection();
+    setShowRejectConfirmation(false);
+  };
+
+  const handleCancelRejection = () => {
+    setShowRejectConfirmation(false);
+  };
+
+  const handleConfirmApproval = () => {
+    handleApproval();
+    setShowApprovalConfirmation(false);
+  };
+
+  const handleCancelApproval = () => {
+    setShowApprovalConfirmation(false);
+  };
+
+
+
 
   return (
     <div
@@ -54,6 +122,79 @@ function SummaryModal({ summaryData, onClose }) {
           >
             📄 Email Summary
           </h2>
+            {type === "summary" && (
+                <div
+                  style={{
+                    marginLeft: "auto",
+                    marginRight: "1rem",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <button
+                    style={{
+                      backgroundColor: data.email && data.email.originalEmail ? "#2e26c8ff" : "#9ca3af",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      cursor: data.email && data.email.originalEmail ? "pointer" : "not-allowed",
+                      opacity: data.email && data.email.originalEmail ? 1 : 0.7,
+                    }}
+                    onClick={handleViewOriginalEmail}
+                    disabled={!data.email || !data.email.originalEmail}
+                    title={data.email && data.email.originalEmail ? "View the original email" : "Original email not available"}
+                  >
+                    Original Email
+                  </button>
+                  <button
+                    style={{
+                      backgroundColor: "#ec9717ff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => console.log("HandlePreviewNewsletter")} // Implement this function to preview the newsletter
+                  >
+                    Preview
+                  </button>
+                  {data.status !== "approved" && (
+                    <>
+                      <button
+                      style={{
+                        backgroundColor: "#42b13aff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setShowApprovalConfirmation(true)}
+                    >
+                      Approve
+                    </button>
+                      <button
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setShowRejectConfirmation(true)} // Show confirmation modal
+                    >
+                      Reject
+                    </button>
+                    </>
+                  )}
+                </div>
+            )}
+          {/* Close Button */}
           <button
             onClick={onClose}
             style={{
@@ -259,6 +400,46 @@ function SummaryModal({ summaryData, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Rejection Confirmation Modal */}
+      {showRejectConfirmation && (
+        <ConfirmationModal
+          data={data}
+          title="Confirm Rejection"
+          message="Are you sure you want to reject this summary?"
+          highlightText="This action will delete the summary and cannot be undone."
+          handleConfirmation={handleConfirmRejection}
+          handleCancellation={handleCancelRejection}
+        />
+      )}
+
+      {/* Approval Confirmation Modal */}
+      {showApprovalConfirmation && (
+        <ConfirmationModal
+          data={data}
+          title="Confirm Approval"
+          message="Are you sure you want to approve this summary?"
+          highlightText="This action will publish the summary to the newsletter."
+          confirmColor="#22c55e"
+          handleConfirmation={handleConfirmApproval}
+          handleCancellation={handleCancelApproval}
+        />
+      )}
+
+      {/* Original Email Modal */}
+      {showOriginalEmailModal && data.email && data.email.originalEmail && (
+        <EmailModal
+          email={data.email.originalEmail.email}
+          onClose={handleCloseOriginalEmailModal}
+          type={"summary"}
+          folderConfig={[]} // Empty folder config since we're just viewing
+          onMoveEmail={() => {}} // No-op since we're just viewing
+          displayedEmails={[]} // Empty since we're just viewing one email
+          onSelectEmail={() => {}} // No-op since we're just viewing
+          onMarkAsRead={() => {}} // No-op since we're just viewing
+          onUpdateTags={() => {}} // No-op since we're just viewing
+        />
+      )}
     </div>
   );
 }

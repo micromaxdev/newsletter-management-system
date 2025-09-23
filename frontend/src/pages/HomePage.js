@@ -630,6 +630,7 @@ export default function HomePage({ handleLogout }) {
           email={selectedEmailForModal}
           onClose={handleCloseEmailModal}
           folderConfig={FOLDER_CONFIG}
+          type={"email"}
           onMoveEmail={moveEmail}
           displayedEmails={filteredEmails}
           onSelectEmail={setSelectedEmailForModal}

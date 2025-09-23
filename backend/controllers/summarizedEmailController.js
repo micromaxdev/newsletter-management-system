@@ -26,7 +26,7 @@ const getSummarizedEmailById = async (req, res) => {
 // Get all summarized emails
 const getAllSummarizedEmails = async (req, res) => {
   try {
-    const emails = await summarizedEmail.find();
+    const emails = await summarizedEmail.find().sort({ isApproved: 1, createdAt: -1 });
     res.status(200).json(emails);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching summarized emails', error });

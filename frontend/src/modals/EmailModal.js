@@ -22,6 +22,7 @@ export default function EmailModal({
   onSelectEmail,
   onMarkAsRead,
   onUpdateTags,
+  type  // "email" or "summary"
 }) {
   const [editingTags, setEditingTags] = useState(false);
   const [tempTags, setTempTags] = useState([]);
@@ -182,65 +183,68 @@ export default function EmailModal({
           >
             {email.subject || "(No Subject)"}
           </h2>
-
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            {/* Previous Button */}
-            <button
-              onClick={handlePrevious}
-              disabled={!hasPrevious}
-              style={{
-                backgroundColor: hasPrevious ? "#4f46e5" : "#ccc",
-                color: "white",
-                padding: "8px 12px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: hasPrevious ? "pointer" : "not-allowed",
-                opacity: hasPrevious ? 1 : 0.6,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <ChevronLeft size={16} style={{ marginRight: "4px" }} /> Previous
-            </button>
+            {type === "email" && (
+              <>
+                {/* Previous Button */}
+                <button
+                  onClick={handlePrevious}
+                  disabled={!hasPrevious}
+                  style={{
+                    backgroundColor: hasPrevious ? "#4f46e5" : "#ccc",
+                    color: "white",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: hasPrevious ? "pointer" : "not-allowed",
+                    opacity: hasPrevious ? 1 : 0.6,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <ChevronLeft size={16} style={{ marginRight: "4px" }} /> Previous
+                </button>
 
-            {/* Next Button */}
-            <button
-              onClick={handleNext}
-              disabled={!hasNext}
-              style={{
-                backgroundColor: hasNext ? "#4f46e5" : "#ccc",
-                color: "white",
-                padding: "8px 12px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: hasNext ? "pointer" : "not-allowed",
-                opacity: hasNext ? 1 : 0.6,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              Next <ChevronRight size={16} style={{ marginLeft: "4px" }} />
-            </button>
+                {/* Next Button */}
+                <button
+                  onClick={handleNext}
+                  disabled={!hasNext}
+                  style={{
+                    backgroundColor: hasNext ? "#4f46e5" : "#ccc",
+                    color: "white",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: hasNext ? "pointer" : "not-allowed",
+                    opacity: hasNext ? 1 : 0.6,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Next <ChevronRight size={16} style={{ marginLeft: "4px" }} />
+                </button>
 
-            {/* Move Folder Dropdown */}
-            <select
-              value={email.folderId || "inbox"}
-              onChange={(e) => onMoveEmail(email._id, e.target.value)}
-              style={{
-                fontSize: "14px",
-                padding: "6px 10px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "6px",
-                backgroundColor: "white",
-                cursor: "pointer",
-              }}
-            >
-              {folderConfig.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  Move to {folder.name}
-                </option>
-              ))}
-            </select>
+                {/* Move Folder Dropdown */}
+                <select
+                  value={email.folderId || "inbox"}
+                  onChange={(e) => onMoveEmail(email._id, e.target.value)}
+                  style={{
+                    fontSize: "14px",
+                    padding: "6px 10px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    backgroundColor: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  {folderConfig.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      Move to {folder.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
 
             {/* Close Button */}
             <button
@@ -347,27 +351,30 @@ export default function EmailModal({
               <Tag size={16} style={{ marginRight: "6px" }} />
               Tags
             </h4>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              {!editingTags && (
-                <button
-                  onClick={handleEditTags}
-                  style={{
-                    backgroundColor: "#6366f1",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    padding: "4px 8px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center"
-                  }}
-                >
-                  <Plus size={12} style={{ marginRight: "4px" }} />
-                  Edit
-                </button>
-              )}
-            </div>
+            {type === "email" && (
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {!editingTags && (
+                  <button
+                    onClick={handleEditTags}
+                    style={{
+                      backgroundColor: "#6366f1",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "4px 8px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center"
+                    }}
+                  >
+                    <Plus size={12} style={{ marginRight: "4px" }} />
+                    Edit
+                  </button>
+                )}
+              </div>
+            )}
+
           </div>
 
           {editingTags ? (
@@ -492,39 +499,40 @@ export default function EmailModal({
             </div>
           )}
         </div>
-
-          {/* Summary Button - Beside Tags */}
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "0.5rem"
-          }}>
-            <button
-              onClick={() => handleSummarizeEmail()}
-              disabled={isGeneratingSummary}
+         {type === "email" && (
+            <div
               style={{
-                backgroundColor: isGeneratingSummary ? "#9ca3af" : "#f59e0b",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "12px 16px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: isGeneratingSummary ? "not-allowed" : "pointer",
                 display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                transition: "all 0.2s ease",
-                whiteSpace: "nowrap"
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: "0.5rem",
               }}
             >
-              {isGeneratingSummary ? "⏳ Generating..." : "✨ Generate AI Summary"}
-            </button>
-          </div>
+              <button
+                onClick={() => handleSummarizeEmail()}
+                disabled={isGeneratingSummary}
+                style={{
+                  backgroundColor: isGeneratingSummary ? "#9ca3af" : "#f59e0b",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: isGeneratingSummary ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isGeneratingSummary ? "⏳ Generating..." : "✨ Generate AI Summary"}
+              </button>
+            </div>
+          )}
         </div>
-
         {/* Email Content */}
         <div
           style={{
@@ -571,6 +579,7 @@ export default function EmailModal({
         <SummaryModal 
           summaryData={summaryResult}
           onClose={closeSummaryModal}
+          type={"email"}
         />
       )}
     </div>
