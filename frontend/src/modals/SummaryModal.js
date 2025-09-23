@@ -419,7 +419,7 @@ const handleRejection = () => {
           data={data}
           title="Confirm Approval"
           message="Are you sure you want to approve this summary?"
-          highlightText="This action will publish the summary to the newsletter."
+          highlightText="This action will put it into queue for newsletter sending."
           confirmColor="#22c55e"
           handleConfirmation={handleConfirmApproval}
           handleCancellation={handleCancelApproval}

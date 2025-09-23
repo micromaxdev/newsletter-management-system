@@ -14,7 +14,6 @@ import {
   Info,
 } from "lucide-react";
 import EmailModal from "../modals/EmailModal";
-import AdminModal from "../modals/AdminModal";
 import FolderTree from "../sections/FolderTree";
 import EmailList from "../sections/EmailList";
 import NotificationCenter from "../components/NotificationCenter";
@@ -36,7 +35,6 @@ const FOLDER_CONFIG = [
 
 export default function HomePage({ handleLogout }) {
   const [folders, setFolders] = useState([]);
-  const [showAdmin, setShowAdmin] = useState(false);
   const [selectedEmailForModal, setSelectedEmailForModal] = useState(null);
 
   // Use custom hooks
@@ -164,16 +162,6 @@ export default function HomePage({ handleLogout }) {
   const handleTagFilterChange = useCallback((e) => {
     setTagFilter(e.target.value);
   }, [setTagFilter]);
-
-  // Memoize admin and sync handlers
-  const handleShowAdmin = useCallback(() => {
-    setShowAdmin(true);
-  }, []);
-
-  const handleCloseAdmin = useCallback(() => {
-    setShowAdmin(false);
-  }, []);
-
   const handleSyncEmails = useCallback(async () => {
     await syncEmails();
   }, [syncEmails]);
@@ -405,24 +393,6 @@ export default function HomePage({ handleLogout }) {
               />
               Sync
             </button>
-
-            <button
-              onClick={handleShowAdmin}
-              style={{
-                backgroundColor: "#4f46e5",
-                color: "white",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Shield size={16} style={{ marginRight: "6px" }} />
-              Admin
-            </button>
-
             <button
               onClick={handleLogout}
               style={{
@@ -620,10 +590,6 @@ export default function HomePage({ handleLogout }) {
           </div>
         </section>
       </main>
-
-      {/* Admin Modal */}
-      {showAdmin && <AdminModal onClose={handleCloseAdmin} />}
-
       {/* Email Modal */}
       {selectedEmailForModal && (
         <EmailModal
