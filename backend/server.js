@@ -17,6 +17,7 @@ const emailRoutes = require("./routes/emailRoutes");
 const folderRoutes = require("./routes/folderRoutes");
 const userRoutes = require("./routes/userRoutes");
 const summarizedEmailRoutes = require("./routes/summarizedEmailRoutes");
+const generationConfigRoutes = require("./routes/generationConfigRoutes");
 const app = express();
 const server = http.createServer(app);
 
@@ -49,6 +50,8 @@ app.use("/api/emails", emailRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/summarized-emails", summarizedEmailRoutes);
+app.use("/api/configs", generationConfigRoutes);
+
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")));
