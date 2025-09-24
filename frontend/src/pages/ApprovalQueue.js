@@ -97,7 +97,9 @@ const ApprovalQueue = () => {
       filtered = filtered.filter(email => 
         (email.title && email.title.toLowerCase().includes(query)) ||
         (email.summary && email.summary.toLowerCase().includes(query)) ||
-        (email.subject && email.subject.toLowerCase().includes(query))
+        (email.subject && email.subject.toLowerCase().includes(query)) || 
+        (email.from && (email.from.name && email.from.name.toLowerCase().includes(query) || 
+                        email.from.address && email.from.address.toLowerCase().includes(query)))
       );
     }
 
@@ -246,7 +248,7 @@ const ApprovalQueue = () => {
             </div>
           </div>
 
-          {/* Search and Filter Controls - moved to header */}
+          {/* Search and Filter Controls */}
           <div style={{
             display: "flex",
             gap: "1rem",
