@@ -12,5 +12,6 @@ router.put('/approval/:id', summarizedEmailController.updateSummarizedEmailStatu
 router.post('/', summarizedEmailController.createSummarizedEmail);
 router.delete('/:id', summarizedEmailController.deleteSummarizedEmail);
 
+router.post('/bulk-summarize', summarizedEmailController.bulkSummarize);
 router.post('/summarize/:emailId', summarizedEmailController.summarizeEmail);
 module.exports = router;

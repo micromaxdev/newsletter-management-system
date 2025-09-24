@@ -1,5 +1,5 @@
 const summarizedEmail = require('../models/summarizedEmailModel');
-const {summarizeEmailContent, setApprovalStatus} = require('../services/summarizeEmailService');
+const {summarizeEmailContent, setApprovalStatus, bulkSummarizeEmails} = require('../services/summarizeEmailService');
 // Create a new summarized email
 const createSummarizedEmail = async (req, res) => {
   try {
@@ -141,6 +141,23 @@ const updateSummarizedEmailStatus = async (req, res) => {
     res.status(500).json({ message: 'Error approving summarized email', error });
   }
 };
+
+const bulkSummarize = async (req, res) => {
+  try {
+    const { folderId, tagInput } = req.body;
+    if (!folderId || !tagInput) {
+      return res.status(400).json({ message: 'Folder and tagInput are required' });
+    }
+    // Call the bulk summarization service
+    const results = await bulkSummarizeEmails(folderId, tagInput);
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error in bulkSummarize:', error);
+    return res.status(500).json({ message: 'Error in bulk summarization', error });
+  }
+};
+
+
 module.exports = {
   createSummarizedEmail,
   getAllSummarizedEmails,
@@ -149,5 +166,6 @@ module.exports = {
   deleteSummarizedEmail,
   summarizeEmail,
   updateSummarizedEmailStatus,
-  getEmailByQuery
+  getEmailByQuery,
+  bulkSummarize
 };      

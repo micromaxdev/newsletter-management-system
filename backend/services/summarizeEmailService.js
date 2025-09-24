@@ -144,6 +144,28 @@ const summarizeEmailContent = async (emailId, options = {}) => {
     }
 };
 
+const bulkSummarizeEmails = async (folderId, tagInput) => {
+    if (!folderId || !tagInput) {
+        throw new Error('Folder and tag must be provided for bulk summarization');
+    }
+    const tags = Array.isArray(tagInput) ? tagInput : [tagInput];
+    const emailsToSummarize = await email.find({
+        folderId: folderId,
+        tags: {$all: tags}, //handling matches of 2 tags
+        isSummarized: { $ne: true },
+    });
+    const results = [];
+    for (const emailId of emailsToSummarize.map(email => email._id )) {
+        try {
+            const result = await summarizeEmailContent(emailId, {});
+            results.push({ emailId, status: 'success', result });
+        } catch (error) {
+            results.push({ emailId, status: 'error', error: error.message });
+        }
+    }
+    return results;
+};
+
 module.exports = {
     validateEmailId,
     getAndValidateEmail,
@@ -153,5 +175,5 @@ module.exports = {
     saveSummarizedEmail,
     summarizeEmailContent,
     setApprovalStatus,
+    bulkSummarizeEmails
 };
-``
