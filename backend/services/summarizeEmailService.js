@@ -4,6 +4,7 @@ const SummarizedEmail = require('../models/summarizedEmailModel');
 const { getGeminiModel } = require('../config/gemini');
 const fs = require('fs');
 const path = require('path');
+const cheerio = require('cheerio');
 
 const promptTemplate = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/systemPrompt.json'), 'utf-8'));
 
@@ -106,12 +107,13 @@ const setApprovalStatus = async (emailId, isApproved) => {
     await summarizedEmailDoc.save();
     return summarizedEmailDoc;
 };
-const saveSummarizedEmail = async (emailId, summarizedResult) => {
+const saveSummarizedEmail = async (emailId, summarizedResult, cleanedHTML) => {
     const existingSummarizedEmail = await SummarizedEmail.findOneAndUpdate(
         { originalEmailId: emailId },
         {
             title: summarizedResult.title,
             summary: summarizedResult.summary,
+            cleanedHTML: cleanedHTML,
             seo: summarizedResult.seo,
         },
         { new: true, upsert: true, setDefaultsOnInsert: true }
@@ -127,13 +129,13 @@ const summarizeEmailContent = async (emailId, options = {}) => {
       validateEmailId(emailId);
 
       const { existingEmail, content } = await getAndValidateEmail(emailId);
-
+      
       const text = await generateSummaryWithGemini(content, options);
-
       const summarizedResult = parseAndValidateSummary(text);
+      const cleanedHTML = cleanHTML(existingEmail.html || '', summarizedResult.title || existingEmail.subject || 'Newsletter', existingEmail.date);
 
       await markEmailAsSummarized(existingEmail);
-      const summarizedEmailDoc = await saveSummarizedEmail(emailId, summarizedResult);
+      const summarizedEmailDoc = await saveSummarizedEmail(emailId, summarizedResult, cleanedHTML);
       await setApprovalStatus(summarizedEmailDoc._id, false); // re-mark as not approved upon re-summarization
       
       // Return the summarized contents
@@ -166,6 +168,85 @@ const bulkSummarizeEmails = async (folderId, tagInput) => {
     return results;
 };
 
+// Load logo as base64 once when the module loads
+const getLogoBase64 = () => {
+    try {
+        const logoPath = path.join(__dirname, '../config/micromaxLogo.png');
+        const logoBuffer = fs.readFileSync(logoPath);
+        return logoBuffer.toString('base64');
+    } catch (error) {
+        console.error('Error loading logo:', error);
+        return ''; // Return empty string if logo can't be loaded
+    }
+};
+
+// Load template once when the module loads
+const getEmailTemplate = () => {
+    try {
+        const templatePath = path.join(__dirname, '../config/emailTemplate.html');
+        return fs.readFileSync(templatePath, 'utf-8');
+    } catch (error) {
+        console.error('Error loading email template:', error);
+        // Return a basic template if file can't be loaded
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITLE}}</title>
+</head>
+<body>
+    <h1>{{TITLE}}</h1>
+    <div>{{CONTENT}}</div>
+</body>
+</html>`;
+    }
+};
+
+// Cache the logo and template
+const LOGO_BASE64 = getLogoBase64();
+const EMAIL_TEMPLATE = getEmailTemplate();
+
+// Function to inject content into the template
+const injectContentIntoTemplate = (content, title = 'Newsletter', customDate = null) => {
+    const currentDate = customDate || new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    return EMAIL_TEMPLATE
+        .replace(/{{LOGO_BASE64}}/g, LOGO_BASE64)
+        .replace(/{{TITLE}}/g, title)
+        .replace(/{{DATE}}/g, currentDate)
+        .replace(/{{CONTENT}}/g, content);
+};
+
+const cleanHTML = (html, title = 'Newsletter', customDate = null) => {
+    const $ = cheerio.load(html); // load only the original content
+    
+    // Remove greeting line(s)
+    $('p').each((i, el) => {
+        const text = $(el).text().toLowerCase();
+        if (text.startsWith('hi ') || text.startsWith('dear ')) {
+            $(el).remove();
+        }
+    });
+
+    // Remove contact info
+    $('p').each((i, el) => {
+        const text = $(el).text().toLowerCase();
+        if (text.includes('contact:') || text.includes('email:')) {
+            $(el).remove();
+        }
+    });
+
+    // Only get the **body content**
+    const cleanedBody = $('body').html() || $.html(); // fallback if no <body>
+
+    // Inject into template
+    return injectContentIntoTemplate(cleanedBody, title, customDate);
+};
 module.exports = {
     validateEmailId,
     getAndValidateEmail,
@@ -175,5 +256,7 @@ module.exports = {
     saveSummarizedEmail,
     summarizeEmailContent,
     setApprovalStatus,
-    bulkSummarizeEmails
+    bulkSummarizeEmails,
+    cleanHTML,
+    injectContentIntoTemplate
 };

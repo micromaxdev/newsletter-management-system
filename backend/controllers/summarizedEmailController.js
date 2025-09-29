@@ -43,13 +43,14 @@ const getEmailByQuery = async (req, res) => {
 // Get a single summarized email by ID
 const getSummarizedEmailById = async (req, res) => {
   try {
-    const email = await summarizedEmail.findById(req.params.id).populate('emailId');
+    const email = await summarizedEmail.findById(req.params.id);
     if (!email) {
       return res.status(404).json({ message: 'Summarized email not found' });
     }
     res.status(200).json(email);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching summarized email', error });
+    console.error('Error fetching summarized email:', error);
+    res.status(500).json({ message: 'Error fetching summarized email', error: error.message });
   }
 };
 // Get all summarized emails
@@ -123,6 +124,21 @@ const summarizeEmail = async (req, res) => {
     });
   }
 };
+const bulkSummarize = async (req, res) => {
+  try {
+    const { folderId, tagInput } = req.body;
+    if (!folderId || !tagInput) {
+      return res.status(400).json({ message: 'Folder and tagInput are required' });
+    }
+    // Call the bulk summarization service
+    const results = await bulkSummarizeEmails(folderId, tagInput);
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error in bulkSummarize:', error);
+    return res.status(500).json({ message: 'Error in bulk summarization', error });
+  }
+};
+
 // Update summarized email approval status
 const updateSummarizedEmailStatus = async (req, res) => {
   try {
@@ -142,20 +158,7 @@ const updateSummarizedEmailStatus = async (req, res) => {
   }
 };
 
-const bulkSummarize = async (req, res) => {
-  try {
-    const { folderId, tagInput } = req.body;
-    if (!folderId || !tagInput) {
-      return res.status(400).json({ message: 'Folder and tagInput are required' });
-    }
-    // Call the bulk summarization service
-    const results = await bulkSummarizeEmails(folderId, tagInput);
-    return res.status(200).json(results);
-  } catch (error) {
-    console.error('Error in bulkSummarize:', error);
-    return res.status(500).json({ message: 'Error in bulk summarization', error });
-  }
-};
+
 
 
 module.exports = {

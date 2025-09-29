@@ -46,7 +46,7 @@ class SummarizationService {
    */
   static async getAllSummarizedEmails() {
     try {
-      const response = await fetch(`${API_BASE_URL}/summarized-emails`, {
+      const response = await fetch(`${API_BASE_URL}/api/summarized-emails`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ class SummarizationService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/summarized-emails/${summaryId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/summarized-emails/${summaryId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ class SummarizationService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/summarized-emails/${summaryId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/summarized-emails/${summaryId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ class SummarizationService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/summarized-emails/${summaryId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/summarized-emails/${summaryId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

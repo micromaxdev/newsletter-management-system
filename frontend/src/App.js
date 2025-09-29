@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import ApprovalQueue from "./pages/ApprovalQueue";
+import PreviewPage from "./pages/PreviewPage";
 import "./App.css";
 
 const API_URL = process.env.REACT_APP_API_URL;
@@ -68,6 +69,10 @@ function App() {
       <Route 
         path="/approval-queue"
         element={isAuthenticated ? <ApprovalQueue /> : <Navigate to="/auth" />}
+      />
+      <Route 
+        path="/preview/:summaryId"
+        element={isAuthenticated ? <PreviewPage /> : <Navigate to="/auth" />}
       />
     </Routes>
   );

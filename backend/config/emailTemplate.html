@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITLE}} - MicroMax Technology</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #ffffff;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e1e5e9;
+            padding: 1rem 0;
+            position: relative;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: 50px;
+            width: auto;
+            margin-right: 15px;
+        }
+
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a365d;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item:hover {
+            color: #2d3748;
+        }
+
+        /* Main Content Styles */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 20px;
+            min-height: 60vh;
+        }
+
+        .breadcrumb {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb a {
+            color: #3182ce;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .content-date {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .content-body {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #2d3748;
+        }
+
+        .content-body h1, 
+        .content-body h2, 
+        .content-body h3, 
+        .content-body h4, 
+        .content-body h5, 
+        .content-body h6 {
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: #1a365d;
+        }
+
+        .content-body h1 { font-size: 2rem; }
+        .content-body h2 { font-size: 1.75rem; }
+        .content-body h3 { font-size: 1.5rem; }
+        .content-body h4 { font-size: 1.25rem; }
+
+        .content-body p {
+            margin-bottom: 1.5rem;
+        }
+
+        .content-body ul, 
+        .content-body ol {
+            margin: 1rem 0 1.5rem 2rem;
+        }
+
+        .content-body li {
+            margin-bottom: 0.5rem;
+        }
+
+        .content-body a {
+            color: #3182ce;
+            text-decoration: none;
+        }
+
+        .content-body a:hover {
+            text-decoration: underline;
+        }
+
+        .content-body blockquote {
+            border-left: 4px solid #3182ce;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #4a5568;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background-color: #f7fafc;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #3182ce;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #2c5282;
+        }
+
+        /* Footer Styles */
+        .footer {
+            background-color: #2d3748;
+            color: #a0aec0;
+            padding: 3rem 0 1rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section ul li a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section ul li a:hover {
+            color: #ffffff;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #4a5568;
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            width: auto;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-links a {
+            color: #a0aec0;
+            font-size: 1.2rem;
+            transition: color 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: #ffffff;
+        }
+
+        .contact-info {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .content-title {
+                font-size: 2rem;
+            }
+
+            .main-container {
+                padding: 1rem 15px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content-title {
+                font-size: 1.75rem;
+            }
+
+            .content-body {
+                font-size: 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="data:image/png;base64,{{LOGO_BASE64}}" alt="MicroMax Technology" class="logo">
+                <div class="brand-text">MicroMax Technology</div>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="https://micromaxtechnology.com/" class="nav-item">Home</a></li>
+                    <li><a href="https://micromaxtechnology.com/products-solutions/" class="nav-item">Products</a></li>
+                    <li><a href="https://micromaxtechnology.com/resources/" class="nav-item">Resources</a></li>
+                    <li><a href="https://micromaxtechnology.com/about/" class="nav-item">About</a></li>
+                    <li><a href="https://micromaxtechnology.com/about/contact-us/" class="nav-item">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <nav class="breadcrumb">
+            <a href="https://micromaxtechnology.com/">Home</a> / 
+            <a href="https://micromaxtechnology.com/resources/">Resources</a> / 
+            <a href="https://micromaxtechnology.com/resources/latest-news/">Latest News</a> / 
+            {{TITLE}}
+        </nav>
+
+        <div class="content-header">
+            <h1 class="content-title">{{TITLE}}</h1>
+            <div class="content-date">{{DATE}}</div>
+        </div>
+
+        <div class="content-body">
+            {{CONTENT}}
+        </div>
+
+        <!-- Call to Action -->
+        <div class="cta-section">
+            <h3>Need More Information?</h3>
+            <p>Contact our team to learn more about our solutions and how we can help your business.</p>
+            <a href="https://micromaxtechnology.com/about/contact-us/" class="cta-button">Contact Us</a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Products</h4>
+                    <ul>
+                        <li><a href="https://micromaxtechnology.com/products-solutions/embedded-computing/">Embedded Computing</a></li>
+                        <li><a href="https://micromaxtechnology.com/products-solutions/embedded-computing/single-board-computers/">Single Board Computers</a></li>
+                        <li><a href="https://micromaxtechnology.com/products-solutions/embedded-computing/rugged-computers/">Rugged Computers</a></li>
+                        <li><a href="https://micromaxtechnology.com/products-solutions/industrial-communications/">Industrial Communications</a></li>
+                        <li><a href="https://micromaxtechnology.com/products-solutions/power-supplies/">Power Supplies</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="https://micromaxtechnology.com/resources/latest-news/">Latest News</a></li>
+                        <li><a href="https://micromaxtechnology.com/resources/policies-insurances-certs/">Policies, Insurances & Certs</a></li>
+                        <li><a href="https://micromaxtechnology.com/resources/faqs/">FAQs</a></li>
+                        <li><a href="https://micromaxtechnology.com/about/about-us/">About Us</a></li>
+                        <li><a href="https://micromaxtechnology.com/about/contact-us/">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact Us</h4>
+                    <p>Call <a href="tel:1300760699" style="color: #ffffff;">1300 760 699</a> or complete our form and we will get back to you.</p>
+                    <br>
+                    <h4>Subscribe</h4>
+                    <p>Sign up for our monthly newsletter.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-logo">
+                    <img src="data:image/png;base64,{{LOGO_BASE64}}" alt="MicroMax Technology">
+                    <span>A MicroMax Brand</span>
+                </div>
+                <div class="social-links">
+                    <a href="http://www.linkedin.com/company/micromax-tech" target="_blank">LinkedIn</a>
+                    <a href="https://www.youtube.com/channel/UCc8lQWXLc_rdTI3-_J8MkkQ" target="_blank">YouTube</a>
+                </div>
+                <div class="contact-info">
+                    <a href="tel:1300760699" style="color: #ffffff;">1300 760 699</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

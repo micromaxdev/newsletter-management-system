@@ -4,6 +4,7 @@ const summarizedEmailSchema = new mongoose.Schema({
   originalEmailId: { type: mongoose.Schema.Types.ObjectId, ref: 'Email', required: true },
   title: { type: String, required: true },
   summary: { type: String, required: true },
+  cleanedHTML: { type: String, default: '' },
   seo: {
     title: { type: String, default: '' },
     description: { type: String, default: '' },

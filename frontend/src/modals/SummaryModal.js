@@ -25,6 +25,17 @@ function SummaryModal({ summaryData, onClose, type }) {
     }
   };
 
+  const handlePreviewNewsletter = () => {
+    // Navigate to the preview page with the summary ID
+    if (data.id) {
+      // Open preview in a new tab
+      const previewUrl = `/preview/${data.id}`;
+      window.open(previewUrl, '_blank');
+    } else {
+      alert("No preview available for this summary.");
+    }
+  };
+
   const handleCloseOriginalEmailModal = () => {
     setShowOriginalEmailModal(false);
   };
@@ -171,7 +182,7 @@ const handleApprovalCancel = () => {
                       padding: "6px 12px",
                       cursor: "pointer",
                     }}
-                    onClick={() => console.log("HandlePreviewNewsletter")} // Implement this function to preview the newsletter
+                    onClick={handlePreviewNewsletter} // Navigate to preview page
                   >
                     Preview
                   </button>
