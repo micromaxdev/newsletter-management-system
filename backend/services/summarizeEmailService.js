@@ -222,30 +222,112 @@ const injectContentIntoTemplate = (content, title = 'Newsletter', customDate = n
         .replace(/{{CONTENT}}/g, content);
 };
 
-const cleanHTML = (html, title = 'Newsletter', customDate = null) => {
-    const $ = cheerio.load(html); // load only the original content
+// const cleanHTML = (html, title = 'Newsletter', customDate = null) => {
+//     const $ = cheerio.load(html);
+
+//     // 1. Extract the specific main content that you want to keep
+//     // In your provided HTML, this is within <div class="content-body">
+//     let extractedContent = $('.content-body').html();
+
+//     if (!extractedContent) {
+//         // Fallback or error handling if .content-body is not found
+//         console.warn("'.content-body' not found, attempting to get entire body HTML.");
+//         extractedContent = $('body').html();
+//     }
+
+//     // Now, load the extracted content into cheerio for further cleaning
+//     const $cleaned = cheerio.load(extractedContent);
+
+//     // Remove greeting line(s) from the extracted content
+//     $cleaned('p').each((i, el) => {
+//         const text = $cleaned(el).text().toLowerCase();
+//         if (text.startsWith('hi&nbsp;') || text.startsWith('dear ')) { // Added &nbsp; as seen in your HTML
+//             $cleaned(el).remove();
+//         }
+//     });
+
+//     // Remove contact info from the extracted content
+//     $cleaned('p').each((i, el) => {
+//         const text = $cleaned(el).text().toLowerCase();
+//         if (text.includes('contact:') || text.includes('email:') || text.includes('@micromax.com.au')) {
+//             $cleaned(el).remove();
+//         }
+//     });
     
-    // Remove greeting line(s)
-    $('p').each((i, el) => {
-        const text = $(el).text().toLowerCase();
+//     // Remove tables with display: none and their contents
+//     $cleaned('table[style*="display: none"]').remove();
+
+//     // Remove images with display: none
+//     $cleaned('img[style*="display: none"]').remove();
+
+//     // Remove empty <p> tags that might have resulted from removals
+//     $cleaned('p').each((i, el) => {
+//         if ($cleaned(el).html().trim() === '' || $cleaned(el).html().trim() === '&nbsp;') {
+//             $cleaned(el).remove();
+//         }
+//     });
+
+//     // Get the final cleaned HTML string of the body content
+//     const finalCleanedContent = $cleaned.html();
+
+//     // Inject into the new template
+//     return injectContentIntoTemplate(finalCleanedContent, title, customDate);
+// };
+const cleanHTML = (html, title = 'Newsletter', customDate = null, removeLastBlocks = 3) => {
+    const $ = cheerio.load(html);
+
+    // 1. Extract the specific main content
+    let extractedContent = $('.content-body').html();
+
+    if (!extractedContent) {
+        console.warn("'.content-body' not found, attempting to get entire body HTML.");
+        extractedContent = $('body').html();
+    }
+
+    // Load the extracted content for cleaning
+    const $cleaned = cheerio.load(extractedContent);
+
+    // 2. Remove greeting line(s)
+    $cleaned('p').each((i, el) => {
+        const text = $cleaned(el).text().toLowerCase();
         if (text.startsWith('hi ') || text.startsWith('dear ')) {
-            $(el).remove();
+            $cleaned(el).remove();
         }
     });
 
-    // Remove contact info
-    $('p').each((i, el) => {
-        const text = $(el).text().toLowerCase();
-        if (text.includes('contact:') || text.includes('email:')) {
-            $(el).remove();
+    // 3. Remove contact info
+    $cleaned('p').each((i, el) => {
+        const text = $cleaned(el).text().toLowerCase();
+        if (text.includes('contact:') || text.includes('email:') || text.includes('@micromax.com.au')) {
+            $cleaned(el).remove();
         }
     });
 
-    // Only get the **body content**
-    const cleanedBody = $('body').html() || $.html(); // fallback if no <body>
+    // 4. Remove hidden tables
+    $cleaned('table[style*="display: none"]').remove();
 
-    // Inject into template
-    return injectContentIntoTemplate(cleanedBody, title, customDate);
+    // 5. Remove hidden images
+    $cleaned('img[style*="display: none"]').remove();
+
+    // 6. Remove empty <p> tags
+    $cleaned('p').each((i, el) => {
+        if ($cleaned(el).html().trim() === '' || $cleaned(el).html().trim() === '&nbsp;') {
+            $cleaned(el).remove();
+        }
+    });
+
+    // 7. Remove the last N block containers (<div> or <table>)
+    const blocks = $cleaned('div, table'); 
+    const removeCount = Math.min(removeLastBlocks, blocks.length);
+    for (let i = 0; i < removeCount; i++) {
+        $cleaned(blocks[blocks.length - 1 - i]).remove();
+    }
+
+    // 8. Final cleaned HTML string
+    const finalCleanedContent = $cleaned.html();
+
+    // 9. Inject into your template
+    return injectContentIntoTemplate(finalCleanedContent, title, customDate);
 };
 module.exports = {
     validateEmailId,
