@@ -12,8 +12,10 @@ import {
   Archive,
   Inbox,
   Info,
+  Settings,
 } from "lucide-react";
 import EmailModal from "../modals/EmailModal";
+import AutoSummarizationConfigModal from "../modals/AutoSummarizationConfigModal";
 import FolderTree from "../sections/FolderTree";
 import EmailList from "../sections/EmailList";
 import NotificationCenter from "../components/NotificationCenter";
@@ -36,6 +38,7 @@ const FOLDER_CONFIG = [
 export default function HomePage({ handleLogout }) {
   const [folders, setFolders] = useState([]);
   const [selectedEmailForModal, setSelectedEmailForModal] = useState(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   // Use custom hooks
   const {
@@ -456,8 +459,27 @@ export default function HomePage({ handleLogout }) {
                 Approval Queue
               </button>
             </Link>
+            <button
+              onClick={() => setShowConfigModal(true)}
+              style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                padding: "1rem",
+                marginTop: "1rem",
+                border: "none",
+                cursor: "pointer",
+                width: "300px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Settings size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
+              Auto Summarization Config
+            </button>
         </aside>
-
+        
+        
         {/* Email List Content */}
         <section
           style={{
@@ -602,6 +624,13 @@ export default function HomePage({ handleLogout }) {
           onSelectEmail={setSelectedEmailForModal}
           onMarkAsRead={markEmailAsRead}
           onUpdateTags={updateTags}
+        />
+      )}
+
+      {/* Auto Summarization Config Modal */}
+      {showConfigModal && (
+        <AutoSummarizationConfigModal
+          onClose={() => setShowConfigModal(false)}
         />
       )}
 
