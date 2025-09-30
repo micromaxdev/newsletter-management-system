@@ -53,9 +53,23 @@ const updateConfig = async (req, res) => {
     }
 };
 
+const deleteConfig = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedConfig = await generationConfig.findByIdAndDelete(id);
+        if (!deletedConfig) {
+            return res.status(404).json({ message: 'Generation config not found' });
+        }
+        res.status(200).json({ message: 'Generation config deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting generation config', error });
+    }
+};
+
 module.exports = {
     createGenerationConfig,
     getAllConfigs,
     getConfigById,
-    updateConfig
+    updateConfig,
+    deleteConfig
 };

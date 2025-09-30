@@ -8,5 +8,5 @@ router.post('/', generationConfigController.createGenerationConfig);
 router.get('/', generationConfigController.getAllConfigs);
 router.get('/:id', generationConfigController.getConfigById);
 router.put('/:id', generationConfigController.updateConfig);
-
+router.delete('/:id', generationConfigController.deleteConfig);
 module.exports = router;
