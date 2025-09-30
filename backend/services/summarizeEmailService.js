@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const email = require('../models/emailModel');
 const SummarizedEmail = require('../models/summarizedEmailModel');
+const generationConfig = require('../models/generationConfigModel');
 const { getGeminiModel } = require('../config/gemini');
 const fs = require('fs');
 const path = require('path');
@@ -168,6 +169,18 @@ const bulkSummarizeEmails = async (folderId, tagInput) => {
     return results;
 };
 
+const autoBulkSummarize = async ()=>{
+    const configs = await generationConfig.find();
+    for (const config of configs) {
+        try {
+            console.log(`Starting bulk summarization for folder: ${config.folder}, tag: ${config.tag}`);
+            await bulkSummarizeEmails(config.folder, config.tag);
+            console.log(`Completed bulk summarization for folder: ${config.folder}, tag: ${config.tag}`);
+        } catch (error) {
+            console.error(`Error during bulk summarization for folder: ${config.folder}, tag: ${config.tag}`, error);
+        }
+    }
+}
 // Load logo as base64 once when the module loads
 const getLogoBase64 = () => {
     try {
@@ -340,5 +353,6 @@ module.exports = {
     setApprovalStatus,
     bulkSummarizeEmails,
     cleanHTML,
-    injectContentIntoTemplate
+    injectContentIntoTemplate,
+    autoBulkSummarize
 };

@@ -12,6 +12,7 @@ const cron = require("node-cron");
 // Scheduled tasks.
 const { deleteOldEmails } = require("./services/cleanUpService");
 const { syncEmailsFromPOP3 } = require("./services/emailSyncService");
+const { autoBulkSummarize } = require('./services/summarizeEmailService');
 // Import Route Files
 const emailRoutes = require("./routes/emailRoutes");
 const folderRoutes = require("./routes/folderRoutes");
@@ -85,6 +86,14 @@ cron.schedule('*/10 * * * *', () => {
     console.log('[CRON JOB] Running scheduled email sync...');
     syncEmailsFromPOP3().catch(error => {
         console.error('[CRON JOB] Error during scheduled email sync:', error);
+    });
+});
+
+// Schedule bulk summarization to run every day at 8 am
+cron.schedule('0 8 * * *', () => {
+    console.log('[CRON JOB] Running bulk summarization...');
+    autoBulkSummarize().catch(error => {
+        console.error('[CRON JOB] Error during bulk summarization:', error);
     });
 });
 

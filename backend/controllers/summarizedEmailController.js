@@ -1,4 +1,5 @@
 const summarizedEmail = require('../models/summarizedEmailModel');
+const email = require('../models/emailModel');
 const {summarizeEmailContent, setApprovalStatus, bulkSummarizeEmails} = require('../services/summarizeEmailService');
 // Create a new summarized email
 const createSummarizedEmail = async (req, res) => {
@@ -84,12 +85,20 @@ const updateSummarizedEmail = async (req, res) => {
 // Delete a summarized email
 const deleteSummarizedEmail = async (req, res) => {
   try {
+    const summarized = await summarizedEmail.findById(req.params.id);
+
+    //reject the summarized email, set original email isSummarized to false NOT IMPLEMENTED YET
+    // const originalEmail = await email.findById(summarized.originalEmailId); 
+    // originalEmail.isSummarized = false;
+    // await originalEmail.save();
+
     const deletedEmail = await summarizedEmail.findByIdAndDelete(req.params.id);
     if (!deletedEmail) {
       return res.status(404).json({ message: 'Summarized email not found' });
     }
     res.status(200).json({ message: 'Summarized email deleted successfully' });
   } catch (error) {
+    console.error('Error deleting summarized email:', error);
     res.status(500).json({ message: 'Error deleting summarized email', error });
   }
 };
