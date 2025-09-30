@@ -152,17 +152,25 @@ const bulkSummarizeEmails = async (folderId, tagInput) => {
         throw new Error('Folder and tag must be provided for bulk summarization');
     }
     const tags = Array.isArray(tagInput) ? tagInput : [tagInput];
+    
+    // Create case-insensitive regex patterns for each tag
+    const tagRegexArray = tags.map(tag => new RegExp(`^${tag}$`, 'i'));
+    
     const emailsToSummarize = await email.find({
         folderId: folderId,
-        tags: {$all: tags}, //handling matches of 2 tags
+        tags: {$all: tagRegexArray}, // Case-insensitive matching for all tags
         isSummarized: { $ne: true },
     });
+    
+    console.log(`Found ${emailsToSummarize.length} emails to summarize for folder: ${folderId}, tags: ${tags}`);
+    
     const results = [];
     for (const emailId of emailsToSummarize.map(email => email._id )) {
         try {
             const result = await summarizeEmailContent(emailId, {});
             results.push({ emailId, status: 'success', result });
         } catch (error) {
+            console.error(`Error summarizing email ${emailId}:`, error.message);
             results.push({ emailId, status: 'error', error: error.message });
         }
     }
