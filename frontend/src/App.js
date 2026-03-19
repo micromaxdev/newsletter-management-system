@@ -6,17 +6,19 @@ import ApprovalQueue from "./pages/ApprovalQueue";
 import PreviewPage from "./pages/PreviewPage";
 import "./App.css";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || "";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/users/me`, { credentials: "include" });
+        const res = await fetch(`${API_URL}/api/users/me`, {
+          credentials: "include",
+        });
+
         if (res.ok) {
           setIsAuthenticated(true);
         } else {
@@ -28,15 +30,14 @@ function App() {
         setAuthChecked(true);
       }
     };
+
     checkAuth();
   }, []);
 
-  // Handler for successful login/register
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
   };
 
-  // Handler for logout
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/api/users/logout`, {
@@ -47,7 +48,6 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  // Show spinner while checking auth
   if (!authChecked) {
     return (
       <div style={{ textAlign: "center", marginTop: "4rem" }}>
@@ -58,19 +58,19 @@ function App() {
 
   return (
     <Routes>
-      <Route 
+      <Route
         path="/"
         element={isAuthenticated ? <HomePage handleLogout={handleLogout} /> : <Navigate to="/auth" />}
       />
-      <Route 
+      <Route
         path="/auth"
         element={!isAuthenticated ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Navigate to="/" />}
       />
-      <Route 
+      <Route
         path="/approval-queue"
         element={isAuthenticated ? <ApprovalQueue /> : <Navigate to="/auth" />}
       />
-      <Route 
+      <Route
         path="/preview/:summaryId"
         element={isAuthenticated ? <PreviewPage /> : <Navigate to="/auth" />}
       />
