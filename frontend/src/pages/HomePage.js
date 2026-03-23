@@ -6,13 +6,10 @@ import {
   RefreshCw,
   Search,
   AlertCircle,
-  Package,
-  Users,
-  TrendingUp,
-  Archive,
-  Inbox,
-  Info,
   Settings,
+  FolderCog,
+  Folder,
+  ArrowLeft,
 } from "lucide-react";
 import EmailModal from "../modals/EmailModal";
 import AutoSummarizationConfigModal from "../modals/AutoSummarizationConfigModal";
@@ -24,23 +21,13 @@ import useEmails from "../hooks/useEmails";
 import useFilters from "../hooks/useFilters";
 import useWebSocket from "../hooks/useWebSocket";
 
-// Move folderConfig outside component to prevent re-creation on every render
-const FOLDER_CONFIG = [
-  { id: "inbox", name: "Inbox", icon: Inbox },
-  { id: "supplier", name: "Suppliers", icon: Package },
-  { id: "competitor", name: "Competitors", icon: TrendingUp },
-  { id: "information", name: "Information", icon: Info },
-  { id: "customers", name: "Customers", icon: Users },
-  { id: "marketing", name: "Marketing", icon: Mail },
-  { id: "archive", name: "Archive", icon: Archive },
-];
-
 export default function HomePage({ handleLogout }) {
   const [folders, setFolders] = useState([]);
+  const [foldersLoading, setFoldersLoading] = useState(true);
   const [selectedEmailForModal, setSelectedEmailForModal] = useState(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [selectedFolderSubfolders, setSelectedFolderSubfolders] = useState([]);
 
-  // Use custom hooks
   const {
     displayedEmails,
     loading,
@@ -54,10 +41,9 @@ export default function HomePage({ handleLogout }) {
     moveEmail,
     updateTags,
     loadMoreEmails,
-    clearCache
+    clearCache,
   } = useEmails();
 
-  // WebSocket hook
   const {
     isConnected,
     connectionError,
@@ -67,7 +53,7 @@ export default function HomePage({ handleLogout }) {
     markNotificationAsRead,
     clearNotifications,
     clearNewEmails,
-    removeToast
+    removeToast,
   } = useWebSocket();
 
   const {
@@ -76,162 +62,329 @@ export default function HomePage({ handleLogout }) {
     daysFilter,
     tagFilter,
     availableTags,
-    filteredEmails, // Now this contains the final filtered emails to display
-    hasActiveFilters, // Whether local filters are active
+    filteredEmails,
+    hasActiveFilters,
     setSelectedFolder,
     setSearchQuery,
     setDaysFilter,
     setTagFilter,
-    getCurrentFolderName,
-    formatTagDisplayName
+    formatTagDisplayName,
   } = useFilters(displayedEmails, fetchEmails);
 
-    // Initial load effect
+  const flattenFolders = useCallback((items) => {
+    const result = [];
+
+    const walk = (foldersToWalk) => {
+      foldersToWalk.forEach((folder) => {
+        if (!folder) return;
+
+        const { children = [], ...rest } = folder;
+        result.push(rest);
+
+        if (Array.isArray(children) && children.length > 0) {
+          walk(children);
+        }
+      });
+    };
+
+    walk(items || []);
+    return result;
+  }, []);
+
+  const flatFolders = useMemo(() => flattenFolders(folders), [folders, flattenFolders]);
+
+  const fetchFolders = useCallback(async () => {
+    try {
+      setFoldersLoading(true);
+
+      const response = await fetch("/api/folders", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch folders");
+      }
+
+      const data = await response.json();
+      setFolders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching folders:", err);
+      setFolders([]);
+    } finally {
+      setFoldersLoading(false);
+    }
+  }, []);
+
+  const fetchSelectedFolderSubfolders = useCallback(async () => {
+    try {
+      if (!selectedFolder || selectedFolder === "all") {
+        setSelectedFolderSubfolders([]);
+        return;
+      }
+
+      const selectedFolderObj = flatFolders.find(
+        (folder) => folder.folderId === selectedFolder
+      );
+
+      if (!selectedFolderObj || selectedFolderObj.parentFolderId) {
+        setSelectedFolderSubfolders([]);
+        return;
+      }
+
+      const response = await fetch(`/api/folders/${selectedFolder}/subfolders`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch subfolders");
+      }
+
+      const data = await response.json();
+      setSelectedFolderSubfolders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching selected folder subfolders:", err);
+      setSelectedFolderSubfolders([]);
+    }
+  }, [selectedFolder, flatFolders]);
+
   useEffect(() => {
-    setFolders(FOLDER_CONFIG);
-    // Load initial emails for "all" folder
+    fetchFolders();
     fetchEmails({ folderId: "all", page: 1 });
     fetchCounts();
-  }, [fetchEmails, fetchCounts]);
+  }, [fetchFolders, fetchEmails, fetchCounts]);
 
-  // Handle new emails from WebSocket
+  useEffect(() => {
+    fetchSelectedFolderSubfolders();
+  }, [fetchSelectedFolderSubfolders]);
+
   useEffect(() => {
     if (newEmails.length > 0) {
-      console.log('New emails received via WebSocket:', newEmails);
-      
-      // Clear cache first to ensure fresh data
       clearCache();
-      
-      // Force refresh email list and counts when new emails arrive
-      fetchEmails({ 
+
+      fetchEmails({
         folderId: selectedFolder !== "all" ? selectedFolder : undefined,
         page: 1,
-        forceRefresh: true  // Force refresh to bypass cache
+        forceRefresh: true,
       });
+
       fetchCounts();
-      
-      // Clear new emails after processing
       clearNewEmails();
     }
-  }, [newEmails, selectedFolder, fetchEmails, fetchCounts, clearNewEmails, clearCache]);
+  }, [
+    newEmails,
+    selectedFolder,
+    fetchEmails,
+    fetchCounts,
+    clearNewEmails,
+    clearCache,
+  ]);
 
-  // Search query effect with debouncing
   useEffect(() => {
-    // Only fetch from server for search queries
     if (searchQuery.trim()) {
       const timeoutId = setTimeout(() => {
-        fetchEmails({ 
+        fetchEmails({
           searchQuery: searchQuery.trim(),
           folderId: selectedFolder !== "all" ? selectedFolder : undefined,
           tag: tagFilter || undefined,
-          days: daysFilter ? parseInt(daysFilter) : undefined,
-          page: 1
+          days: daysFilter ? parseInt(daysFilter, 10) : undefined,
+          page: 1,
         });
       }, 300);
 
       return () => clearTimeout(timeoutId);
     } else if (searchQuery === "") {
-      // If search is cleared, reload current folder with active filters
-      fetchEmails({ 
+      fetchEmails({
         folderId: selectedFolder !== "all" ? selectedFolder : undefined,
         tag: tagFilter || undefined,
-        days: daysFilter ? parseInt(daysFilter) : undefined,
-        page: 1 
+        days: daysFilter ? parseInt(daysFilter, 10) : undefined,
+        page: 1,
       });
     }
   }, [searchQuery, selectedFolder, tagFilter, daysFilter, fetchEmails]);
 
-  // Memoized event handlers to prevent child re-renders
-  const handleEmailClick = useCallback((email) => {
-    setSelectedEmailForModal(email);
-    if (!email.isRead) {
-      markEmailAsRead(email._id);
-    }
-  }, [markEmailAsRead]);
+  const handleEmailClick = useCallback(
+    (email) => {
+      setSelectedEmailForModal(email);
+      if (!email.isRead) {
+        markEmailAsRead(email._id);
+      }
+    },
+    [markEmailAsRead]
+  );
 
   const handleCloseEmailModal = useCallback(() => {
     setSelectedEmailForModal(null);
   }, []);
 
-  // Memoize filter handlers
-  const handleSearchChange = useCallback((e) => {
-    setSearchQuery(e.target.value);
-  }, [setSearchQuery]);
+  const handleSearchChange = useCallback(
+    (e) => {
+      setSearchQuery(e.target.value);
+    },
+    [setSearchQuery]
+  );
 
-  const handleDaysFilterChange = useCallback((e) => {
-    setDaysFilter(e.target.value);
-  }, [setDaysFilter]);
+  const handleDaysFilterChange = useCallback(
+    (e) => {
+      setDaysFilter(e.target.value);
+    },
+    [setDaysFilter]
+  );
 
-  const handleTagFilterChange = useCallback((e) => {
-    setTagFilter(e.target.value);
-  }, [setTagFilter]);
+  const handleTagFilterChange = useCallback(
+    (e) => {
+      setTagFilter(e.target.value);
+    },
+    [setTagFilter]
+  );
+
   const handleSyncEmails = useCallback(async () => {
     await syncEmails();
-  }, [syncEmails]);
+    await fetchFolders();
+    await fetchCounts();
+    await fetchSelectedFolderSubfolders();
+  }, [syncEmails, fetchFolders, fetchCounts, fetchSelectedFolderSubfolders]);
 
-  // Compute effective pagination 
+  const handleSubfolderClick = useCallback(
+    (subfolderId) => {
+      setSelectedFolder(subfolderId);
+      setSelectedEmailForModal(null);
+    },
+    [setSelectedFolder]
+  );
+
+  const selectedFolderObject = useMemo(() => {
+    if (!selectedFolder || selectedFolder === "all") return null;
+    return flatFolders.find((folder) => folder.folderId === selectedFolder) || null;
+  }, [selectedFolder, flatFolders]);
+
+  const parentFolderOfSelectedSubfolder = useMemo(() => {
+    if (!selectedFolderObject?.parentFolderId) return null;
+
+    return (
+      flatFolders.find(
+        (folder) => folder.folderId === selectedFolderObject.parentFolderId
+      ) || null
+    );
+  }, [selectedFolderObject, flatFolders]);
+
+  const handleBackToParentFolder = useCallback(() => {
+    if (!parentFolderOfSelectedSubfolder) return;
+    setSelectedFolder(parentFolderOfSelectedSubfolder.folderId);
+    setSelectedEmailForModal(null);
+  }, [parentFolderOfSelectedSubfolder, setSelectedFolder]);
+
   const effectivePagination = useMemo(() => {
     if (!pagination) return null;
-    
+
     if (hasActiveFilters) {
       return {
         ...pagination,
-        hasNextPage: filteredEmails.length === displayedEmails.length && pagination.hasNextPage
+        hasNextPage:
+          filteredEmails.length === displayedEmails.length &&
+          pagination.hasNextPage,
       };
     }
-    
-    // No local filters active, use original pagination
-    return pagination;
-  }, [pagination, hasActiveFilters, filteredEmails.length, displayedEmails.length]);
 
-  // Memoize filter status display to avoid recalculation on every render
+    return pagination;
+  }, [
+    pagination,
+    hasActiveFilters,
+    filteredEmails.length,
+    displayedEmails.length,
+  ]);
+
   const filterStatusDisplay = useMemo(() => {
     if (!daysFilter && !tagFilter) return null;
-    
+
     const parts = [];
+
     if (daysFilter) {
       parts.push(`last ${daysFilter} day${daysFilter === "1" ? "" : "s"}`);
     }
+
     if (tagFilter) {
       parts.push(`"${formatTagDisplayName(tagFilter)}" tag`);
     }
-    
+
     return `filtered by ${parts.join(" and ")}`;
   }, [daysFilter, tagFilter, formatTagDisplayName]);
 
-  // Memoize email count display to avoid recalculation on every render
   const emailCountDisplay = useMemo(() => {
     if (hasActiveFilters) {
       let display = `Showing ${filteredEmails.length} filtered emails`;
+
       if (displayedEmails.length > filteredEmails.length) {
         display += ` from ${displayedEmails.length} fetched`;
       }
+
       if (pagination) {
         display += ` of ${pagination.totalEmails} total`;
       }
-      return `(${display})`;
-    } else {
-      return `(Showing ${filteredEmails.length} emails${pagination ? ` of ${pagination.totalEmails}` : ""})`;
-    }
-  }, [hasActiveFilters, filteredEmails.length, displayedEmails.length, pagination]);
 
-  // Memoize LoadingSkeleton component to prevent recreation
-  const LoadingSkeleton = useCallback(() => (
-    <div style={{ padding: "1rem" }}>
-      {[...Array(5)].map((_, index) => (
-        <div
-          key={index}
-          style={{
-            height: "80px",
-            backgroundColor: "#f1f5f9",
-            marginBottom: "8px",
-            borderRadius: "8px",
-            animation: "pulse 1.5s infinite",
-          }}
-        />
-      ))}
-    </div>
-  ), []);
+      return `(${display})`;
+    }
+
+    return `(Showing ${filteredEmails.length} emails${
+      pagination ? ` of ${pagination.totalEmails}` : ""
+    })`;
+  }, [
+    hasActiveFilters,
+    filteredEmails.length,
+    displayedEmails.length,
+    pagination,
+  ]);
+
+  const currentFolderName = useMemo(() => {
+    if (selectedFolder === "all") return "All Emails";
+
+    const matchedFolder = flatFolders.find(
+      (folder) => folder.folderId === selectedFolder
+    );
+
+    if (!matchedFolder) return selectedFolder;
+
+    if (!matchedFolder.parentFolderId) return matchedFolder.name;
+
+    const parent = flatFolders.find(
+      (folder) => folder.folderId === matchedFolder.parentFolderId
+    );
+
+    return parent ? `${parent.name} / ${matchedFolder.name}` : matchedFolder.name;
+  }, [selectedFolder, flatFolders]);
+
+  const LoadingSkeleton = useCallback(
+    () => (
+      <div style={{ padding: "1rem" }}>
+        {[...Array(5)].map((_, index) => (
+          <div
+            key={index}
+            style={{
+              height: "80px",
+              backgroundColor: "#f1f5f9",
+              marginBottom: "8px",
+              borderRadius: "8px",
+              animation: "pulse 1.5s infinite",
+            }}
+          />
+        ))}
+      </div>
+    ),
+    []
+  );
+
+  const sidebarButtonStyle = {
+    backgroundColor: "white",
+    borderRadius: "12px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    padding: "1rem",
+    marginTop: "1rem",
+    border: "none",
+    cursor: "pointer",
+    width: "300px",
+    display: "flex",
+    alignItems: "center",
+    textDecoration: "none",
+  };
 
   return (
     <div
@@ -244,7 +397,6 @@ export default function HomePage({ handleLogout }) {
         flexDirection: "column",
       }}
     >
-      {/* Header */}
       <header
         style={{
           backgroundColor: "white",
@@ -278,21 +430,21 @@ export default function HomePage({ handleLogout }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            {/* WebSocket Connection Status */}
             {connectionError && (
-              <div style={{ 
-                color: "#dc2626", 
-                fontSize: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px"
-              }}>
+              <div
+                style={{
+                  color: "#dc2626",
+                  fontSize: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
                 <AlertCircle size={14} />
                 Connection Error
               </div>
             )}
 
-            {/* Notification Center */}
             <NotificationCenter
               notifications={notifications}
               onMarkAsRead={markNotificationAsRead}
@@ -330,7 +482,6 @@ export default function HomePage({ handleLogout }) {
               />
             </div>
 
-            {/* Days filter dropdown */}
             <select
               value={daysFilter}
               onChange={handleDaysFilterChange}
@@ -350,7 +501,6 @@ export default function HomePage({ handleLogout }) {
               <option value="90">Last 90 days</option>
             </select>
 
-            {/* Tag filter dropdown */}
             <select
               value={tagFilter}
               onChange={handleTagFilterChange}
@@ -396,6 +546,7 @@ export default function HomePage({ handleLogout }) {
               />
               Sync
             </button>
+
             <button
               onClick={handleLogout}
               style={{
@@ -415,7 +566,6 @@ export default function HomePage({ handleLogout }) {
         </div>
       </header>
 
-      {/* Main */}
       <main
         style={{
           maxWidth: "1200px",
@@ -427,7 +577,6 @@ export default function HomePage({ handleLogout }) {
           overflow: "hidden",
         }}
       >
-        {/* Sidebar */}
         <aside
           style={{
             width: "300px",
@@ -440,47 +589,37 @@ export default function HomePage({ handleLogout }) {
             onFolderSelect={setSelectedFolder}
             unreadCounts={unreadCounts}
           />
-          <Link to="/approval-queue">
-              <button
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  padding: "1rem",
-                  marginTop: "1rem",
-                  border: "none",
-                  cursor: "pointer",
-                  width: "300px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Shield size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
-                Approval Queue
-              </button>
-            </Link>
-            <button
-              onClick={() => setShowConfigModal(true)}
-              style={{
-                backgroundColor: "white",
-                borderRadius: "12px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                padding: "1rem",
-                marginTop: "1rem",
-                border: "none",
-                cursor: "pointer",
-                width: "300px",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Settings size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
-              Auto Summarization Config
+
+          <Link to="/approval-queue" style={{ textDecoration: "none" }}>
+            <button style={sidebarButtonStyle}>
+              <Shield size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
+              Approval Queue
             </button>
+          </Link>
+
+          <Link to="/manage-folders" style={{ textDecoration: "none" }}>
+            <button style={sidebarButtonStyle}>
+              <FolderCog size={16} style={{ marginRight: "6px", color: "#4f46e5" }} />
+              Manage Folders
+            </button>
+          </Link>
+
+          <Link to="/manage-subfolders" style={{ textDecoration: "none" }}>
+            <button style={sidebarButtonStyle}>
+              <FolderCog size={16} style={{ marginRight: "6px", color: "#0f766e" }} />
+              Manage Subfolders
+            </button>
+          </Link>
+
+          <button
+            onClick={() => setShowConfigModal(true)}
+            style={sidebarButtonStyle}
+          >
+            <Settings size={16} style={{ marginRight: "6px", color: "#f59e0b" }} />
+            Auto Summarization Config
+          </button>
         </aside>
-        
-        
-        {/* Email List Content */}
+
         <section
           style={{
             flex: 1,
@@ -489,14 +628,15 @@ export default function HomePage({ handleLogout }) {
             overflow: "hidden",
           }}
         >
-          {/* Folder Header */}
           <div
             style={{
               marginBottom: "1rem",
               flexShrink: 0,
-              height: "60px",
+              minHeight: "60px",
               display: "flex",
               alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px",
             }}
           >
             <h2
@@ -506,7 +646,7 @@ export default function HomePage({ handleLogout }) {
                 margin: 0,
               }}
             >
-              {getCurrentFolderName(FOLDER_CONFIG)}
+              {foldersLoading ? "Loading folders..." : currentFolderName}
               <span
                 style={{
                   fontSize: "0.9rem",
@@ -516,6 +656,7 @@ export default function HomePage({ handleLogout }) {
               >
                 {emailCountDisplay}
               </span>
+
               {searchQuery && (
                 <span
                   style={{
@@ -527,6 +668,7 @@ export default function HomePage({ handleLogout }) {
                   - searching for "{searchQuery}"
                 </span>
               )}
+
               {filterStatusDisplay && (
                 <span
                   style={{
@@ -540,7 +682,6 @@ export default function HomePage({ handleLogout }) {
               )}
             </h2>
 
-            {/* clear filters button when filters are active */}
             {hasActiveFilters && (
               <button
                 onClick={() => {
@@ -564,7 +705,118 @@ export default function HomePage({ handleLogout }) {
             )}
           </div>
 
-          {/* Error Message */}
+          {parentFolderOfSelectedSubfolder && (
+            <div
+              style={{
+                marginBottom: "1rem",
+                backgroundColor: "white",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                padding: "12px 16px",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleBackToParentFolder}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  backgroundColor: "#eef2ff",
+                  color: "#4338ca",
+                  border: "1px solid #c7d2fe",
+                  borderRadius: "999px",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowLeft size={14} />
+                Back to {parentFolderOfSelectedSubfolder.name}
+              </button>
+
+              <span
+                style={{
+                  fontSize: "13px",
+                  color: "#475569",
+                }}
+              >
+                You are viewing subfolder:{" "}
+                <strong>{selectedFolderObject?.name}</strong>
+              </span>
+            </div>
+          )}
+
+          {selectedFolder !== "all" &&
+            !selectedFolderObject?.parentFolderId &&
+            selectedFolderSubfolders.length > 0 && (
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  padding: "12px 16px",
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "10px",
+                    color: "#334155",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                  }}
+                >
+                  <Folder size={16} />
+                  Subfolders in {currentFolderName}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  }}
+                >
+                  {selectedFolderSubfolders.map((subfolder) => {
+                    const isActiveSubfolder = selectedFolder === subfolder.folderId;
+
+                    return (
+                      <button
+                        key={subfolder.folderId}
+                        type="button"
+                        onClick={() => handleSubfolderClick(subfolder.folderId)}
+                        style={{
+                          backgroundColor: isActiveSubfolder ? "#4338ca" : "#eef2ff",
+                          color: isActiveSubfolder ? "white" : "#4338ca",
+                          padding: "6px 10px",
+                          borderRadius: "999px",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          border: isActiveSubfolder
+                            ? "1px solid #4338ca"
+                            : "1px solid #c7d2fe",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {subfolder.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           {error && (
             <div
               style={{
@@ -576,7 +828,7 @@ export default function HomePage({ handleLogout }) {
                 display: "flex",
                 alignItems: "center",
                 flexShrink: 0,
-                height: "48px",
+                minHeight: "48px",
               }}
             >
               <AlertCircle size={16} style={{ marginRight: "8px" }} />
@@ -584,7 +836,6 @@ export default function HomePage({ handleLogout }) {
             </div>
           )}
 
-          {/* Fixed Email List Container */}
           <div
             style={{
               flex: 1,
@@ -604,7 +855,7 @@ export default function HomePage({ handleLogout }) {
                 searchQuery={searchQuery}
                 selectedEmailForModal={selectedEmailForModal}
                 onEmailClick={handleEmailClick}
-                folderConfig={FOLDER_CONFIG}
+                folders={folders}
                 pagination={effectivePagination}
                 onLoadMore={loadMoreEmails}
               />
@@ -612,12 +863,12 @@ export default function HomePage({ handleLogout }) {
           </div>
         </section>
       </main>
-      {/* Email Modal */}
+
       {selectedEmailForModal && (
         <EmailModal
           email={selectedEmailForModal}
           onClose={handleCloseEmailModal}
-          folderConfig={FOLDER_CONFIG}
+          folders={folders}
           type={"email"}
           onMoveEmail={moveEmail}
           displayedEmails={filteredEmails}
@@ -627,23 +878,24 @@ export default function HomePage({ handleLogout }) {
         />
       )}
 
-      {/* Auto Summarization Config Modal */}
       {showConfigModal && (
         <AutoSummarizationConfigModal
           onClose={() => setShowConfigModal(false)}
         />
       )}
 
-      {/* Toast Notifications */}
-      <ToastContainer 
-        toasts={toasts} 
-        onRemoveToast={removeToast} 
-      />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
       `}</style>
     </div>

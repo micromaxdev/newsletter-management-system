@@ -4,7 +4,9 @@ import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import PreviewPage from "./pages/PreviewPage";
+import ManageFoldersPage from "./pages/ManageFoldersPage";
 import "./App.css";
+import ManageSubfoldersPage from "./pages/ManageSubfoldersPage";
 
 const API_URL = process.env.REACT_APP_API_URL || "";
 
@@ -74,6 +76,10 @@ function App() {
         path="/preview/:summaryId"
         element={isAuthenticated ? <PreviewPage /> : <Navigate to="/auth" />}
       />
+
+      <Route path="/manage-folders" element={<ManageFoldersPage />} />
+
+       <Route path="/manage-subfolders" element={<ManageSubfoldersPage />} />
     </Routes>
   );
 }

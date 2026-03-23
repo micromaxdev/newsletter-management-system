@@ -1,86 +1,584 @@
+// const asyncHandler = require('express-async-handler');
+// const Email = require('../models/emailModel');
+// const SenderPreference = require('../models/senderPreferenceModel');
+// const { syncEmailsFromPOP3 } = require('../services/emailSyncService');
+// const emailTaggingServices = require('../services/emailTaggingService');
+// const emailTaggingService = new emailTaggingServices();
+// // Define valid folder IDs
+// const VALID_FOLDER_IDS = [
+//   'inbox', 'supplier', 'competitor', 'information',
+//   'customers', 'marketing', 'archive'
+// ];
+
+// const getEmails = asyncHandler(async (req, res) => {
+//   // Immediately respond to the client to prevent timeout
+//   res.status(202).json({ message: "Email synchronization has started in the background." });
+
+//   // Start the sync process but don't wait for it to finish
+//   syncEmailsFromPOP3().catch(error => {
+//     // We log the error on the server, but the client has already received a response.
+//     console.error("[API TRIGGERED SYNC] An error occurred during the background email sync:", error);
+//   });
+// });
+
+// const getSavedEmailById = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const email = await Email.findById(emailId);
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found' });
+//   }
+//   res.status(200).json({ email });
+// });
+
+// const getSavedEmails = asyncHandler(async (req, res) => {
+//   const { folderId, q, page = 1, limit = 50, days, tag } = req.query; // Added days and tag filters
+//   const filter = {};
+
+//   if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
+//     filter.folderId = folderId;
+//   }
+
+//   if (q) {
+//     filter.$or = [
+//       { subject: { $regex: q, $options: 'i' } },
+//       { 'from.name': { $regex: q, $options: 'i' } },
+//       { 'from.address': { $regex: q, $options: 'i' } },
+//       { text: { $regex: q, $options: 'i' } },
+//     ];
+//   }
+
+//   // Date filter - filter by days ago
+//   if (days && !isNaN(days) && parseInt(days) >= 0) {
+//     const daysAgo = parseInt(days);
+//     const startDate = new Date();
+//     startDate.setDate(startDate.getDate() - daysAgo);
+//     startDate.setHours(0, 0, 0, 0); // Start of the day
+
+//     const endDate = new Date();
+//     endDate.setHours(23, 59, 59, 999); // End of today
+
+//     filter.date = { $gte: startDate, $lte: endDate };
+//   }
+
+//   // Tag filter - case insensitive search
+//   if (tag && typeof tag === 'string' && tag.trim() !== '') {
+//     filter.tags = { $regex: new RegExp(`^${tag.trim()}$`, 'i') };
+//   }
+
+//   // Convert to numbers and set reasonable limits
+//   const pageNum = Math.max(1, parseInt(page));
+//   const limitNum = Math.min(100, Math.max(10, parseInt(limit))); // Min 10, max 100 emails per page
+//   const skip = (pageNum - 1) * limitNum;
+
+//   // Get total count for pagination info
+//   const totalEmails = await Email.countDocuments(filter);
+//   const totalPages = Math.ceil(totalEmails / limitNum);
+
+//   // Get paginated emails
+//   const emails = await Email.find(filter)
+//     .sort({ date: -1 })
+//     .skip(skip)
+//     .limit(limitNum);
+
+//   res.status(200).json({ 
+//     emails,
+//     pagination: {
+//       currentPage: pageNum,
+//       totalPages,
+//       totalEmails,
+//       hasNextPage: pageNum < totalPages,
+//       hasPrevPage: pageNum > 1,
+//       limit: limitNum
+//     },
+//     appliedFilters: {
+//       folderId: folderId || null,
+//       searchQuery: q || null,
+//       days: days ? parseInt(days) : null,
+//       tag: tag || null,
+//       dateRange: days ? {
+//         from: new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+//         to: new Date().toISOString().split('T')[0],
+//         description: `Last ${days} days`
+//       } : null
+//     }
+//   });
+// });
+
+// const getUnreadCount = asyncHandler(async (req, res) => {
+//   const { folderId } = req.query;
+//   let filter = { isRead: false };
+//   if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
+//     filter.folderId = folderId;
+//   }
+//   const count = await Email.countDocuments(filter);
+//   res.status(200).json({ unreadCount: count });
+// });
+
+// const getUnreadCounts = asyncHandler(async (req, res) => {
+//   const unreadCounts = { all: 0 };
+//   for (const folderId of VALID_FOLDER_IDS) {
+//     const count = await Email.countDocuments({ folderId, isRead: false });
+//     unreadCounts[folderId] = count;
+//   }
+//   unreadCounts.all = await Email.countDocuments({ isRead: false }); // Total unread count
+//   res.status(200).json({ unreadCounts });
+// });
+
+// const getEmailCounts = asyncHandler(async (req, res) => {
+//   const counts = { all: 0 };
+//   const unreadCounts = { all: 0 };
+
+//   for (const folderId of VALID_FOLDER_IDS) {
+//     const total = await Email.countDocuments({ folderId });
+//     const unread = await Email.countDocuments({ folderId, isRead: false });
+//     counts[folderId] = total;
+//     unreadCounts[folderId] = unread;
+//   }
+
+//   counts.all = await Email.countDocuments(); // Total emails
+//   unreadCounts.all = await Email.countDocuments({ isRead: false }); // Total unread emails
+
+//   res.status(200).json({ counts, unreadCounts });
+// });
+
+
+// const markEmailAsRead = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const email = await Email.findByIdAndUpdate(emailId, { isRead: true }, { new: true });
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found' });
+//   }
+//   res.status(200).json({ message: 'Email marked as read', email });
+// });
+
+// const markEmailAsUnread = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const email = await Email.findByIdAndUpdate(emailId, { isRead: false }, { new: true });
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found' });
+//   }
+//   res.status(200).json({ message: 'Email marked as unread', email });
+// });
+
+// const bulkMarkEmailsAsRead = asyncHandler(async (req, res) => {
+//   const { emailIds } = req.body;
+//   if (!Array.isArray(emailIds) || emailIds.length === 0) {
+//     return res.status(400).json({ message: 'Please provide an array of email IDs.' });
+//   }
+//   const result = await Email.updateMany({ _id: { $in: emailIds } }, { isRead: true });
+//   res.status(200).json({ message: `${result.modifiedCount} emails marked as read.` });
+// });
+
+// const moveEmailToFolder = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const { folderId } = req.body;
+
+//   if (!folderId || !VALID_FOLDER_IDS.includes(folderId)) {
+//     return res.status(400).json({ message: 'Invalid or missing folderId.' });
+//   }
+
+//   const email = await Email.findById(emailId);
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found.' });
+//   }
+
+//   const oldFolderId = email.folderId;
+//   const senderAddress = email.from?.address?.toLowerCase();
+
+//   // Update email's folder
+//   email.folderId = folderId;
+//   // Mark as read when moved, common behavior
+//   email.isRead = true;
+//   await email.save();
+
+//   // Save sender preference for future categorization
+//   if (senderAddress && typeof senderAddress === 'string' && senderAddress.trim() !== '') {
+//     await SenderPreference.findOneAndUpdate(
+//       { senderAddress: senderAddress },
+//       { $set: { folderId: folderId } },
+//       { upsert: true, new: true }
+//     );
+//     // Optionally, re-categorize past emails from this sender
+//     // This could be done in a background task for large datasets
+//     await Email.updateMany(
+//       { 'from.address': senderAddress, _id: { $ne: emailId }, folderId: oldFolderId },
+//       { $set: { folderId: folderId } }
+//     );
+//   } else {
+//     // The email move will still proceed even without saving sender preference
+//   }
+
+//   res.status(200).json({ message: `Email moved to ${folderId} and preference saved.`, email });
+// });
+
+// const recategorizeEmails = asyncHandler(async (req, res) => {
+//   const emails = await Email.find({});
+//   const preferences = await SenderPreference.find({});
+//   const senderPreferencesCache = {};
+//   preferences.forEach(pref => {
+//     senderPreferencesCache[pref.senderAddress] = pref.folderId;
+//   });
+
+//   let reCategorizedCount = 0;
+
+//   for (const email of emails) {
+//     const newFolderId = emailCategorizationService.categorizeEmail(email, senderPreferencesCache);
+//     if (email.folderId !== newFolderId) {
+//       email.folderId = newFolderId;
+//       await email.save();
+//       reCategorizedCount++;
+//     }
+//   }
+
+//   res.status(200).json({
+//     message: `Recategorization complete. ${reCategorizedCount} emails updated based on the latest categorization rules.`,
+//   });
+// });
+
+// const getEmailsByFolder = asyncHandler(async (req, res) => {
+//   const { folderId } = req.params;
+//   const { page = 1, limit = 20, q } = req.query; // Add pagination and search
+//   const skip = (parseInt(page) - 1) * parseInt(limit);
+
+//   if (!folderId || (!VALID_FOLDER_IDS.includes(folderId) && folderId !== 'all')) {
+//     return res.status(400).json({ message: 'Invalid folder ID.' });
+//   }
+
+//   let filter = {};
+//   if (folderId !== 'all') {
+//     filter.folderId = folderId;
+//   }
+
+//   if (q) {
+//     filter.$or = [
+//       { subject: { $regex: q, $options: 'i' } },
+//       { 'from.name': { $regex: q, $options: 'i' } },
+//       { 'from.address': { $regex: q, $options: 'i' } },
+//       { text: { $regex: q, $options: 'i' } },
+//     ];
+//   }
+
+//   const emails = await Email.find(filter)
+//     .sort({ date: -1 })
+//     .skip(skip)
+//     .limit(parseInt(limit));
+
+//   const total = await Email.countDocuments(filter);
+
+//   res.status(200).json({
+//     emails,
+//     total,
+//     page: parseInt(page),
+//     pages: Math.ceil(total / parseInt(limit))
+//   });
+// });
+
+// const manualCategorization = asyncHandler(async (req, res) => {
+//   const { id } = req.params; // email ID
+//   const { categoryId } = req.body; // new folder ID
+
+//   if (!categoryId || !VALID_FOLDER_IDS.includes(categoryId)) {
+//     return res.status(400).json({ message: 'Invalid categoryId provided.' });
+//   }
+
+//   const email = await Email.findById(id);
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found.' });
+//   }
+
+//   const oldFolderId = email.folderId;
+//   email.folderId = categoryId;
+//   email.isRead = true; // Mark as read when manually categorized
+//   await email.save();
+
+//   // Implement 'learning': Store sender preference for future categorization
+//   const senderAddress = email.from?.address?.toLowerCase();
+//   if (senderAddress && typeof senderAddress === 'string' && senderAddress.trim() !== '') {
+//     await SenderPreference.findOneAndUpdate(
+//       { senderAddress: senderAddress },
+//       { $set: { folderId: categoryId } },
+//       { upsert: true, new: true }
+//     );
+
+//     // Optionally re-categorize past emails from this sender
+//     await Email.updateMany(
+//       { 'from.address': senderAddress, _id: { $ne: id }, folderId: oldFolderId },
+//       { $set: { folderId: categoryId } }
+//     );
+//   } else {
+//     // Continue without saving sender preference
+//   }
+
+//   res.status(200).json({ message: 'Email manually categorized successfully.', email });
+// });
+// const getEmailStatistics = asyncHandler(async (req, res) => {
+//   const totalEmails = await Email.countDocuments();
+//   const totalUnread = await Email.countDocuments({ isRead: false });
+
+//   const emailsPerFolder = await Email.aggregate([
+//     { $group: { _id: '$folderId', count: { $sum: 1 } } }
+//   ]);
+
+//   const unreadPerFolder = await Email.aggregate([
+//     { $match: { isRead: false } },
+//     { $group: { _id: '$folderId', count: { $sum: 1 } } }
+//   ]);
+
+//   const topSenders = await Email.aggregate([
+//     { $group: { _id: '$from.address', count: { $sum: 1 } } },
+//     { $sort: { count: -1 } },
+//     { $limit: 10 }
+//   ]);
+
+//   res.status(200).json({
+//     totalEmails,
+//     totalUnread,
+//     emailsPerFolder: emailsPerFolder.reduce((acc, curr) => ({ ...acc, [curr._id]: curr.count }), {}),
+//     unreadPerFolder: unreadPerFolder.reduce((acc, curr) => ({ ...acc, [curr._id]: curr.count }), {}),
+//     topSenders,
+//   });
+// });
+
+// const validateCategorization = asyncHandler(async (req, res) => {
+//   const totalEmails = await Email.countDocuments();
+//   const sampleSize = Math.min(totalEmails, 100);
+
+//   const sampleEmails = await Email.aggregate([{ $sample: { size: sampleSize } }]);
+
+//   let correctPredictions = 0;
+//   sampleEmails.forEach(email => {
+//     if (email.folderId === 'information' && email.subject && email.subject.toLowerCase().includes('newsletter')) {
+//       correctPredictions++;
+//     }
+//   });
+
+//   const accuracy = sampleSize > 0 ? (correctPredictions / sampleSize) * 100 : 0;
+
+//   res.status(200).json({
+//     message: 'Categorization validation simulated.',
+//     totalEmailsChecked: sampleSize,
+//     simulatedCorrectPredictions: correctPredictions,
+//     simulatedAccuracy: accuracy.toFixed(2) + '%'
+//   });
+// });
+// // Generate tags for an email
+// const tagEmail = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const email = await Email.findById(emailId);
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found' });
+//   }
+
+//   const tags = emailTaggingService.generateTags(email);
+//   email.tags = tags;
+//   await email.save();
+
+//   res.status(200).json({ message: 'Tags generated and saved.', tags, email });
+// });
+
+// // Update tags of an email
+// const updateEmailTags = asyncHandler(async (req, res) => {
+//   const { emailId } = req.params;
+//   const { tags } = req.body;
+
+//   if (!Array.isArray(tags)) {
+//     return res.status(400).json({ message: 'Tags should be an array of strings.' });
+//   }
+
+//   const email = await Email.findById(emailId);
+//   if (!email) {
+//     return res.status(404).json({ message: 'Email not found' });
+//   }
+
+//   email.tags = tags;
+//   await email.save();
+
+//   res.status(200).json({ message: 'Tags updated successfully.', email });
+// });
+
+// // Get all available tags across all emails
+// const getAllTags = asyncHandler(async (req, res) => {
+//   try {
+//     // Use MongoDB aggregation to get all unique tags
+//     const tagData = await Email.aggregate([
+//       { $unwind: "$tags" },  // Flatten the tags arrays
+//       { $group: { _id: "$tags", count: { $sum: 1 } } },  // Group by tag and count occurrences
+//       { $sort: { count: -1, _id: 1 } }  // Sort by count (descending) then alphabetically
+//     ]);
+
+//     // Extract just the tag names and normalize them
+//     const tags = tagData.map(item => item._id.toLowerCase()).filter(tag => tag && tag.trim());
+    
+//     res.status(200).json({ 
+//       tags: [...new Set(tags)], // Remove any duplicates and return unique tags
+//       tagCounts: tagData.reduce((acc, item) => {
+//         acc[item._id.toLowerCase()] = item.count;
+//         return acc;
+//       }, {})
+//     });
+//   } catch (error) {
+//     console.error('Error fetching tags:', error);
+//     res.status(500).json({ message: 'Error fetching available tags', error: error.message });
+//   }
+// });
+
+// // Export all functions
+// module.exports = {
+//   getEmails,
+//   getSavedEmails,
+//   getUnreadCount,
+//   getUnreadCounts,
+//   getEmailCounts,
+//   markEmailAsRead,
+//   markEmailAsUnread,
+//   bulkMarkEmailsAsRead,
+//   moveEmailToFolder,
+//   recategorizeEmails,
+//   getEmailsByFolder,
+//   manualCategorization,
+//   getEmailStatistics,
+//   validateCategorization,
+//   tagEmail,
+//   updateEmailTags,
+//   getAllTags,
+//   getSavedEmailById
+// };
+
 const asyncHandler = require('express-async-handler');
 const Email = require('../models/emailModel');
 const SenderPreference = require('../models/senderPreferenceModel');
 const { syncEmailsFromPOP3 } = require('../services/emailSyncService');
-const emailTaggingServices = require('../services/emailTaggingService');
-const emailTaggingService = new emailTaggingServices();
-// Define valid folder IDs
-const VALID_FOLDER_IDS = [
-  'inbox', 'supplier', 'competitor', 'information',
-  'customers', 'marketing', 'archive'
+const EmailTaggingService = require('../services/emailTaggingService');
+const EmailCategorizationService = require('../services/emailCategorizationService');
+
+const emailTaggingService = new EmailTaggingService();
+const emailCategorizationService = new EmailCategorizationService();
+
+const SYSTEM_FOLDER_IDS = [
+  'suppliers',
+  'customers',
+  'competitors',
+  'uncategorised',
+  'archive',
 ];
 
-const getEmails = asyncHandler(async (req, res) => {
-  // Immediately respond to the client to prevent timeout
-  res.status(202).json({ message: "Email synchronization has started in the background." });
+const normalizeFolderId = (value = '') => String(value || '').trim().toLowerCase();
 
-  // Start the sync process but don't wait for it to finish
-  syncEmailsFromPOP3().catch(error => {
-    // We log the error on the server, but the client has already received a response.
-    console.error("[API TRIGGERED SYNC] An error occurred during the background email sync:", error);
+const isValidFolderId = (value = '') => {
+  const normalized = normalizeFolderId(value);
+
+  // allow dynamic/custom folders too
+  // letters, numbers, dash, underscore only
+  return /^[a-z0-9_-]+$/.test(normalized);
+};
+
+const getBaseVisibleFilter = () => ({
+  $and: [
+    {
+      $or: [
+        { visible: true },
+        { visible: { $exists: false } },
+      ],
+    },
+    {
+      $or: [
+        { isNewsletter: true },
+        { isNewsletter: { $exists: false } },
+      ],
+    },
+  ],
+});
+
+const buildSenderPreferencesCache = async () => {
+  const preferences = await SenderPreference.find({});
+  const senderPreferencesCache = {};
+
+  preferences.forEach((pref) => {
+    if (pref?.senderAddress && pref?.folderId) {
+      senderPreferencesCache[String(pref.senderAddress).toLowerCase()] = String(pref.folderId).toLowerCase();
+    }
+  });
+
+  return senderPreferencesCache;
+};
+
+const getEmails = asyncHandler(async (req, res) => {
+  const result = await syncEmailsFromPOP3();
+
+  res.status(200).json({
+    message: 'Email synchronization finished.',
+    result,
   });
 });
 
 const getSavedEmailById = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
-  const email = await Email.findById(emailId);
+
+  const email = await Email.findOne({
+    _id: emailId,
+    ...getBaseVisibleFilter(),
+  });
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found' });
   }
+
   res.status(200).json({ email });
 });
 
 const getSavedEmails = asyncHandler(async (req, res) => {
-  const { folderId, q, page = 1, limit = 50, days, tag } = req.query; // Added days and tag filters
-  const filter = {};
+  const { folderId, q, page = 1, limit = 50, days, tag } = req.query;
 
-  if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-    filter.folderId = folderId;
+  const filter = {
+    ...getBaseVisibleFilter(),
+  };
+
+  const normalizedFolderId = normalizeFolderId(folderId);
+
+  if (normalizedFolderId && normalizedFolderId !== 'all' && isValidFolderId(normalizedFolderId)) {
+    filter.folderId = normalizedFolderId;
   }
 
-  if (q) {
+  if (q && String(q).trim() !== '') {
     filter.$or = [
       { subject: { $regex: q, $options: 'i' } },
       { 'from.name': { $regex: q, $options: 'i' } },
       { 'from.address': { $regex: q, $options: 'i' } },
       { text: { $regex: q, $options: 'i' } },
+      { html: { $regex: q, $options: 'i' } },
     ];
   }
 
-  // Date filter - filter by days ago
-  if (days && !isNaN(days) && parseInt(days) >= 0) {
-    const daysAgo = parseInt(days);
+  if (days && !isNaN(days) && parseInt(days, 10) >= 0) {
+    const daysAgo = parseInt(days, 10);
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
-    startDate.setHours(0, 0, 0, 0); // Start of the day
+    startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999); // End of today
+    endDate.setHours(23, 59, 59, 999);
 
     filter.date = { $gte: startDate, $lte: endDate };
   }
 
-  // Tag filter - case insensitive search
   if (tag && typeof tag === 'string' && tag.trim() !== '') {
     filter.tags = { $regex: new RegExp(`^${tag.trim()}$`, 'i') };
   }
 
-  // Convert to numbers and set reasonable limits
-  const pageNum = Math.max(1, parseInt(page));
-  const limitNum = Math.min(100, Math.max(10, parseInt(limit))); // Min 10, max 100 emails per page
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(100, Math.max(10, parseInt(limit, 10) || 50));
   const skip = (pageNum - 1) * limitNum;
 
-  // Get total count for pagination info
   const totalEmails = await Email.countDocuments(filter);
   const totalPages = Math.ceil(totalEmails / limitNum);
 
-  // Get paginated emails
   const emails = await Email.find(filter)
-    .sort({ date: -1 })
+    .sort({ date: -1, createdAt: -1 })
     .skip(skip)
     .limit(limitNum);
 
-  res.status(200).json({ 
+  res.status(200).json({
     emails,
     pagination: {
       currentPage: pageNum,
@@ -88,84 +586,168 @@ const getSavedEmails = asyncHandler(async (req, res) => {
       totalEmails,
       hasNextPage: pageNum < totalPages,
       hasPrevPage: pageNum > 1,
-      limit: limitNum
+      limit: limitNum,
     },
     appliedFilters: {
-      folderId: folderId || null,
+      folderId: normalizedFolderId || null,
       searchQuery: q || null,
-      days: days ? parseInt(days) : null,
+      days: days ? parseInt(days, 10) : null,
       tag: tag || null,
-      dateRange: days ? {
-        from: new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        to: new Date().toISOString().split('T')[0],
-        description: `Last ${days} days`
-      } : null
-    }
+      dateRange: days
+        ? {
+            from: new Date(Date.now() - parseInt(days, 10) * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
+            to: new Date().toISOString().split('T')[0],
+            description: `Last ${days} days`,
+          }
+        : null,
+    },
   });
 });
 
 const getUnreadCount = asyncHandler(async (req, res) => {
   const { folderId } = req.query;
-  let filter = { isRead: false };
-  if (folderId && VALID_FOLDER_IDS.includes(folderId)) {
-    filter.folderId = folderId;
+
+  const filter = {
+    ...getBaseVisibleFilter(),
+    isRead: false,
+  };
+
+  const normalizedFolderId = normalizeFolderId(folderId);
+
+  if (normalizedFolderId && normalizedFolderId !== 'all' && isValidFolderId(normalizedFolderId)) {
+    filter.folderId = normalizedFolderId;
   }
+
   const count = await Email.countDocuments(filter);
+
   res.status(200).json({ unreadCount: count });
 });
 
 const getUnreadCounts = asyncHandler(async (req, res) => {
+  const visibleFilter = getBaseVisibleFilter();
+
+  const unreadPerFolder = await Email.aggregate([
+    { $match: { ...visibleFilter, isRead: false } },
+    { $group: { _id: '$folderId', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
   const unreadCounts = { all: 0 };
-  for (const folderId of VALID_FOLDER_IDS) {
-    const count = await Email.countDocuments({ folderId, isRead: false });
-    unreadCounts[folderId] = count;
-  }
-  unreadCounts.all = await Email.countDocuments({ isRead: false }); // Total unread count
+
+  unreadPerFolder.forEach((item) => {
+    unreadCounts[item._id || 'uncategorised'] = item.count;
+  });
+
+  unreadCounts.all = await Email.countDocuments({
+    ...visibleFilter,
+    isRead: false,
+  });
+
+  // ensure system folders always exist in response
+  SYSTEM_FOLDER_IDS.forEach((folderId) => {
+    if (typeof unreadCounts[folderId] === 'undefined') {
+      unreadCounts[folderId] = 0;
+    }
+  });
+
   res.status(200).json({ unreadCounts });
 });
 
 const getEmailCounts = asyncHandler(async (req, res) => {
+  const visibleFilter = getBaseVisibleFilter();
+
+  const countsAgg = await Email.aggregate([
+    { $match: visibleFilter },
+    { $group: { _id: '$folderId', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const unreadAgg = await Email.aggregate([
+    { $match: { ...visibleFilter, isRead: false } },
+    { $group: { _id: '$folderId', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
   const counts = { all: 0 };
   const unreadCounts = { all: 0 };
 
-  for (const folderId of VALID_FOLDER_IDS) {
-    const total = await Email.countDocuments({ folderId });
-    const unread = await Email.countDocuments({ folderId, isRead: false });
-    counts[folderId] = total;
-    unreadCounts[folderId] = unread;
-  }
+  countsAgg.forEach((item) => {
+    counts[item._id || 'uncategorised'] = item.count;
+  });
 
-  counts.all = await Email.countDocuments(); // Total emails
-  unreadCounts.all = await Email.countDocuments({ isRead: false }); // Total unread emails
+  unreadAgg.forEach((item) => {
+    unreadCounts[item._id || 'uncategorised'] = item.count;
+  });
+
+  counts.all = await Email.countDocuments(visibleFilter);
+  unreadCounts.all = await Email.countDocuments({
+    ...visibleFilter,
+    isRead: false,
+  });
+
+  SYSTEM_FOLDER_IDS.forEach((folderId) => {
+    if (typeof counts[folderId] === 'undefined') counts[folderId] = 0;
+    if (typeof unreadCounts[folderId] === 'undefined') unreadCounts[folderId] = 0;
+  });
 
   res.status(200).json({ counts, unreadCounts });
 });
 
-
 const markEmailAsRead = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
-  const email = await Email.findByIdAndUpdate(emailId, { isRead: true }, { new: true });
+
+  const email = await Email.findOneAndUpdate(
+    {
+      _id: emailId,
+      ...getBaseVisibleFilter(),
+    },
+    { isRead: true },
+    { new: true }
+  );
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found' });
   }
+
   res.status(200).json({ message: 'Email marked as read', email });
 });
 
 const markEmailAsUnread = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
-  const email = await Email.findByIdAndUpdate(emailId, { isRead: false }, { new: true });
+
+  const email = await Email.findOneAndUpdate(
+    {
+      _id: emailId,
+      ...getBaseVisibleFilter(),
+    },
+    { isRead: false },
+    { new: true }
+  );
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found' });
   }
+
   res.status(200).json({ message: 'Email marked as unread', email });
 });
 
 const bulkMarkEmailsAsRead = asyncHandler(async (req, res) => {
   const { emailIds } = req.body;
+
   if (!Array.isArray(emailIds) || emailIds.length === 0) {
     return res.status(400).json({ message: 'Please provide an array of email IDs.' });
   }
-  const result = await Email.updateMany({ _id: { $in: emailIds } }, { isRead: true });
+
+  const result = await Email.updateMany(
+    {
+      _id: { $in: emailIds },
+      ...getBaseVisibleFilter(),
+    },
+    { isRead: true }
+  );
+
   res.status(200).json({ message: `${result.modifiedCount} emails marked as read.` });
 });
 
@@ -173,56 +755,57 @@ const moveEmailToFolder = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
   const { folderId } = req.body;
 
-  if (!folderId || !VALID_FOLDER_IDS.includes(folderId)) {
+  const normalizedFolderId = normalizeFolderId(folderId);
+
+  if (!normalizedFolderId || !isValidFolderId(normalizedFolderId)) {
     return res.status(400).json({ message: 'Invalid or missing folderId.' });
   }
 
-  const email = await Email.findById(emailId);
+  const email = await Email.findOne({
+    _id: emailId,
+    ...getBaseVisibleFilter(),
+  });
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found.' });
   }
 
-  const oldFolderId = email.folderId;
-  const senderAddress = email.from?.address?.toLowerCase();
-
-  // Update email's folder
-  email.folderId = folderId;
-  // Mark as read when moved, common behavior
+  email.folderId = normalizedFolderId;
   email.isRead = true;
   await email.save();
 
-  // Save sender preference for future categorization
-  if (senderAddress && typeof senderAddress === 'string' && senderAddress.trim() !== '') {
+  const senderAddress = String(email.from?.address || '').toLowerCase().trim();
+
+  if (senderAddress) {
     await SenderPreference.findOneAndUpdate(
-      { senderAddress: senderAddress },
-      { $set: { folderId: folderId } },
+      { senderAddress },
+      { $set: { folderId: normalizedFolderId } },
       { upsert: true, new: true }
     );
-    // Optionally, re-categorize past emails from this sender
-    // This could be done in a background task for large datasets
-    await Email.updateMany(
-      { 'from.address': senderAddress, _id: { $ne: emailId }, folderId: oldFolderId },
-      { $set: { folderId: folderId } }
-    );
-  } else {
-    // The email move will still proceed even without saving sender preference
   }
 
-  res.status(200).json({ message: `Email moved to ${folderId} and preference saved.`, email });
+  res.status(200).json({
+    message: `Email moved to ${normalizedFolderId} and preference saved.`,
+    email,
+  });
 });
 
 const recategorizeEmails = asyncHandler(async (req, res) => {
-  const emails = await Email.find({});
-  const preferences = await SenderPreference.find({});
-  const senderPreferencesCache = {};
-  preferences.forEach(pref => {
-    senderPreferencesCache[pref.senderAddress] = pref.folderId;
-  });
+  const emails = await Email.find(getBaseVisibleFilter());
+  const senderPreferencesCache = await buildSenderPreferencesCache();
 
   let reCategorizedCount = 0;
 
   for (const email of emails) {
-    const newFolderId = emailCategorizationService.categorizeEmail(email, senderPreferencesCache);
+    const classification = emailCategorizationService.classifyEmail(
+      email,
+      senderPreferencesCache
+    );
+
+    const newFolderId = classification?.category
+      ? normalizeFolderId(classification.category)
+      : 'uncategorised';
+
     if (email.folderId !== newFolderId) {
       email.folderId = newFolderId;
       await email.save();
@@ -231,152 +814,193 @@ const recategorizeEmails = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    message: `Recategorization complete. ${reCategorizedCount} emails updated based on the latest categorization rules.`,
+    message: `Recategorization complete. ${reCategorizedCount} emails updated.`,
   });
 });
 
 const getEmailsByFolder = asyncHandler(async (req, res) => {
   const { folderId } = req.params;
-  const { page = 1, limit = 20, q } = req.query; // Add pagination and search
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const { page = 1, limit = 20, q } = req.query;
 
-  if (!folderId || (!VALID_FOLDER_IDS.includes(folderId) && folderId !== 'all')) {
+  const normalizedFolderId = normalizeFolderId(folderId);
+
+  if (!normalizedFolderId || (normalizedFolderId !== 'all' && !isValidFolderId(normalizedFolderId))) {
     return res.status(400).json({ message: 'Invalid folder ID.' });
   }
 
-  let filter = {};
-  if (folderId !== 'all') {
-    filter.folderId = folderId;
+  const filter = {
+    ...getBaseVisibleFilter(),
+  };
+
+  if (normalizedFolderId !== 'all') {
+    filter.folderId = normalizedFolderId;
   }
 
-  if (q) {
+  if (q && String(q).trim() !== '') {
     filter.$or = [
       { subject: { $regex: q, $options: 'i' } },
       { 'from.name': { $regex: q, $options: 'i' } },
       { 'from.address': { $regex: q, $options: 'i' } },
       { text: { $regex: q, $options: 'i' } },
+      { html: { $regex: q, $options: 'i' } },
     ];
   }
 
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(100, Math.max(10, parseInt(limit, 10) || 20));
+  const skip = (pageNum - 1) * limitNum;
+
   const emails = await Email.find(filter)
-    .sort({ date: -1 })
+    .sort({ date: -1, createdAt: -1 })
     .skip(skip)
-    .limit(parseInt(limit));
+    .limit(limitNum);
 
   const total = await Email.countDocuments(filter);
 
   res.status(200).json({
     emails,
     total,
-    page: parseInt(page),
-    pages: Math.ceil(total / parseInt(limit))
+    page: pageNum,
+    pages: Math.ceil(total / limitNum),
   });
 });
 
 const manualCategorization = asyncHandler(async (req, res) => {
-  const { id } = req.params; // email ID
-  const { categoryId } = req.body; // new folder ID
+  const { id } = req.params;
+  const { categoryId } = req.body;
 
-  if (!categoryId || !VALID_FOLDER_IDS.includes(categoryId)) {
+  const normalizedCategoryId = normalizeFolderId(categoryId);
+
+  if (!normalizedCategoryId || !isValidFolderId(normalizedCategoryId)) {
     return res.status(400).json({ message: 'Invalid categoryId provided.' });
   }
 
-  const email = await Email.findById(id);
+  const email = await Email.findOne({
+    _id: id,
+    ...getBaseVisibleFilter(),
+  });
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found.' });
   }
 
-  const oldFolderId = email.folderId;
-  email.folderId = categoryId;
-  email.isRead = true; // Mark as read when manually categorized
+  email.folderId = normalizedCategoryId;
+  email.isRead = true;
   await email.save();
 
-  // Implement 'learning': Store sender preference for future categorization
-  const senderAddress = email.from?.address?.toLowerCase();
-  if (senderAddress && typeof senderAddress === 'string' && senderAddress.trim() !== '') {
+  const senderAddress = String(email.from?.address || '').toLowerCase().trim();
+
+  if (senderAddress) {
     await SenderPreference.findOneAndUpdate(
-      { senderAddress: senderAddress },
-      { $set: { folderId: categoryId } },
+      { senderAddress },
+      { $set: { folderId: normalizedCategoryId } },
       { upsert: true, new: true }
     );
-
-    // Optionally re-categorize past emails from this sender
-    await Email.updateMany(
-      { 'from.address': senderAddress, _id: { $ne: id }, folderId: oldFolderId },
-      { $set: { folderId: categoryId } }
-    );
-  } else {
-    // Continue without saving sender preference
   }
 
-  res.status(200).json({ message: 'Email manually categorized successfully.', email });
+  res.status(200).json({
+    message: 'Email manually categorized successfully.',
+    email,
+  });
 });
+
 const getEmailStatistics = asyncHandler(async (req, res) => {
-  const totalEmails = await Email.countDocuments();
-  const totalUnread = await Email.countDocuments({ isRead: false });
+  const visibleFilter = getBaseVisibleFilter();
+
+  const totalEmails = await Email.countDocuments(visibleFilter);
+  const totalUnread = await Email.countDocuments({
+    ...visibleFilter,
+    isRead: false,
+  });
 
   const emailsPerFolder = await Email.aggregate([
-    { $group: { _id: '$folderId', count: { $sum: 1 } } }
+    { $match: visibleFilter },
+    { $group: { _id: '$folderId', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
   ]);
 
   const unreadPerFolder = await Email.aggregate([
-    { $match: { isRead: false } },
-    { $group: { _id: '$folderId', count: { $sum: 1 } } }
+    { $match: { ...visibleFilter, isRead: false } },
+    { $group: { _id: '$folderId', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
   ]);
 
   const topSenders = await Email.aggregate([
+    { $match: visibleFilter },
     { $group: { _id: '$from.address', count: { $sum: 1 } } },
     { $sort: { count: -1 } },
-    { $limit: 10 }
+    { $limit: 10 },
   ]);
 
   res.status(200).json({
     totalEmails,
     totalUnread,
-    emailsPerFolder: emailsPerFolder.reduce((acc, curr) => ({ ...acc, [curr._id]: curr.count }), {}),
-    unreadPerFolder: unreadPerFolder.reduce((acc, curr) => ({ ...acc, [curr._id]: curr.count }), {}),
+    emailsPerFolder: emailsPerFolder.reduce((acc, curr) => {
+      acc[curr._id || 'uncategorised'] = curr.count;
+      return acc;
+    }, {}),
+    unreadPerFolder: unreadPerFolder.reduce((acc, curr) => {
+      acc[curr._id || 'uncategorised'] = curr.count;
+      return acc;
+    }, {}),
     topSenders,
   });
 });
 
 const validateCategorization = asyncHandler(async (req, res) => {
-  const totalEmails = await Email.countDocuments();
+  const visibleFilter = getBaseVisibleFilter();
+  const totalEmails = await Email.countDocuments(visibleFilter);
   const sampleSize = Math.min(totalEmails, 100);
 
-  const sampleEmails = await Email.aggregate([{ $sample: { size: sampleSize } }]);
+  const sampleEmails = await Email.aggregate([
+    { $match: visibleFilter },
+    { $sample: { size: sampleSize } },
+  ]);
 
-  let correctPredictions = 0;
-  sampleEmails.forEach(email => {
-    if (email.folderId === 'information' && email.subject && email.subject.toLowerCase().includes('newsletter')) {
-      correctPredictions++;
+  let uncategorisedCount = 0;
+  let singleFolderIntegrity = true;
+
+  sampleEmails.forEach((email) => {
+    if (!email.folderId) {
+      singleFolderIntegrity = false;
+    }
+    if (email.folderId === 'uncategorised') {
+      uncategorisedCount++;
     }
   });
 
-  const accuracy = sampleSize > 0 ? (correctPredictions / sampleSize) * 100 : 0;
-
   res.status(200).json({
-    message: 'Categorization validation simulated.',
+    message: 'Validation complete.',
     totalEmailsChecked: sampleSize,
-    simulatedCorrectPredictions: correctPredictions,
-    simulatedAccuracy: accuracy.toFixed(2) + '%'
+    uncategorisedEmailsInSample: uncategorisedCount,
+    singleFolderIntegrity,
+    note: 'Each email uses one folderId only, so it cannot belong to more than one folder.',
   });
 });
-// Generate tags for an email
+
 const tagEmail = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
-  const email = await Email.findById(emailId);
+
+  const email = await Email.findOne({
+    _id: emailId,
+    ...getBaseVisibleFilter(),
+  });
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found' });
   }
 
   const tags = emailTaggingService.generateTags(email);
-  email.tags = tags;
+  email.tags = Array.isArray(tags) ? tags : [];
   await email.save();
 
-  res.status(200).json({ message: 'Tags generated and saved.', tags, email });
+  res.status(200).json({
+    message: 'Tags generated and saved.',
+    tags: email.tags,
+    email,
+  });
 });
 
-// Update tags of an email
 const updateEmailTags = asyncHandler(async (req, res) => {
   const { emailId } = req.params;
   const { tags } = req.body;
@@ -385,44 +1009,53 @@ const updateEmailTags = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Tags should be an array of strings.' });
   }
 
-  const email = await Email.findById(emailId);
+  const email = await Email.findOne({
+    _id: emailId,
+    ...getBaseVisibleFilter(),
+  });
+
   if (!email) {
     return res.status(404).json({ message: 'Email not found' });
   }
 
-  email.tags = tags;
+  email.tags = tags.map((tag) => String(tag).trim()).filter(Boolean);
   await email.save();
 
-  res.status(200).json({ message: 'Tags updated successfully.', email });
+  res.status(200).json({
+    message: 'Tags updated successfully.',
+    email,
+  });
 });
 
-// Get all available tags across all emails
 const getAllTags = asyncHandler(async (req, res) => {
   try {
-    // Use MongoDB aggregation to get all unique tags
     const tagData = await Email.aggregate([
-      { $unwind: "$tags" },  // Flatten the tags arrays
-      { $group: { _id: "$tags", count: { $sum: 1 } } },  // Group by tag and count occurrences
-      { $sort: { count: -1, _id: 1 } }  // Sort by count (descending) then alphabetically
+      { $match: getBaseVisibleFilter() },
+      { $unwind: '$tags' },
+      { $group: { _id: '$tags', count: { $sum: 1 } } },
+      { $sort: { count: -1, _id: 1 } },
     ]);
 
-    // Extract just the tag names and normalize them
-    const tags = tagData.map(item => item._id.toLowerCase()).filter(tag => tag && tag.trim());
-    
-    res.status(200).json({ 
-      tags: [...new Set(tags)], // Remove any duplicates and return unique tags
+    const tags = tagData
+      .map((item) => String(item._id || '').toLowerCase().trim())
+      .filter(Boolean);
+
+    res.status(200).json({
+      tags: [...new Set(tags)],
       tagCounts: tagData.reduce((acc, item) => {
-        acc[item._id.toLowerCase()] = item.count;
+        const key = String(item._id || '').toLowerCase().trim();
+        if (key) acc[key] = item.count;
         return acc;
-      }, {})
+      }, {}),
     });
   } catch (error) {
-    console.error('Error fetching tags:', error);
-    res.status(500).json({ message: 'Error fetching available tags', error: error.message });
+    res.status(500).json({
+      message: 'Error fetching available tags',
+      error: error.message,
+    });
   }
 });
 
-// Export all functions
 module.exports = {
   getEmails,
   getSavedEmails,
@@ -441,5 +1074,5 @@ module.exports = {
   tagEmail,
   updateEmailTags,
   getAllTags,
-  getSavedEmailById
+  getSavedEmailById,
 };
